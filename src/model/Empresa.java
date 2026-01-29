@@ -1,5 +1,7 @@
 package model;
 
+import exceptions.FormatoIncorretoException;
+
 public class Empresa {
     private Integer id;
     private String nome;
@@ -19,6 +21,9 @@ public class Empresa {
     }
 
     public void setNome(String nome) {
+        if (!nome.matches("[A-Za-z\\d]{3,30}")) {
+            throw new FormatoIncorretoException("Nome invalido.");
+        }
         this.nome = nome;
     }
 
@@ -27,6 +32,9 @@ public class Empresa {
     }
 
     public void setTitular(String titular) {
+        if (!titular.matches("[A-Za-z]\\s[A-Za-z]{3,30}")) {
+            throw new FormatoIncorretoException("Titular invalido.");
+        }
         this.titular = titular;
     }
 
@@ -35,6 +43,9 @@ public class Empresa {
     }
 
     public void setCnpj(String cnpj) {
+        if (!cnpj.matches("(\\./-)?\\d{14,50}")) {
+            throw new FormatoIncorretoException("CNPJ invalida.");
+        }
         this.cnpj = cnpj;
     }
 }

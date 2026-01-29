@@ -5,7 +5,7 @@ import java.time.LocalDate;
 public class Registros {
     private Integer id;
     private String descricao;
-    private Tipo tipo;
+    private String tipo;
     private LocalDate data;
 
     private Integer id_estoque;
@@ -46,11 +46,11 @@ public class Registros {
         this.descricao = descricao;
     }
 
-    public Tipo getTipo() {
+    public String getTipo() {
         return tipo;
     }
 
-    public void setTipo(Tipo tipo) {
+    public void setTipo(String tipo) {
         this.tipo = tipo;
     }
 
@@ -76,9 +76,5 @@ public class Registros {
 
     public void setDataEntrega(LocalDate dataEntrega) {
         this.dataEntrega = dataEntrega;
-    }
-
-    public enum Tipo {
-        ABASTECIMENTO, EMPRESTIMO
     }
 }

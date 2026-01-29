@@ -78,24 +78,26 @@ public class CategoriaDAO extends DAO<Categoria, Integer> {
                 SELECT *
                 FROM Categoria
                 WHERE id_categoria = ?""";
-        Categoria c = new Categoria();
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
-            ResultSet rs = ps.executeQuery();
+            try (var rs = ps.executeQuery()) {
 
-            while (rs.next()) {
-                c.setId(rs.getInt(1));
-                c.setTipo(rs.getString(2));
-                c.setGenero(rs.getString(3));
+                if (rs.next()) {
+                    Categoria c = new Categoria();
+
+                    c.setId(rs.getInt(1));
+                    c.setTipo(rs.getString(2));
+                    c.setGenero(rs.getString(3));
+
+                    return Optional.of(c);
+                }
             }
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-        return Optional.of(c);
+        return Optional.empty();
     }
 
     @Override
@@ -107,11 +109,11 @@ public class CategoriaDAO extends DAO<Categoria, Integer> {
 
         try(PreparedStatement ps = getConnection().prepareStatement(sql)) {
 
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                categorias.add(resusltSetCategoria(rs));
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    categorias.add(resusltSetCategoria(rs));
+                }
             }
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

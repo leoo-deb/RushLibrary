@@ -1,5 +1,7 @@
 package model;
 
+import exceptions.FormatoIncorretoException;
+
 import java.time.LocalDate;
 
 public class Contrato {

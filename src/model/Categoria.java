@@ -1,5 +1,7 @@
 package model;
 
+import exceptions.FormatoIncorretoException;
+
 public class Categoria {
     private Integer id;
     private String tipo;

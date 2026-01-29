@@ -1,18 +1,20 @@
 package model;
 
+import exceptions.FormatoIncorretoException;
+
 public class Estoque {
     private Integer id;
     private Integer id_livro;
     private Integer quantidade;
 
     public void entrada(int valor) {
-        if (valor <= 0) throw new IllegalArgumentException("ERRO: Valor invalido.");
+        if (valor <= 0) throw new IllegalArgumentException("Valor invalido.");
         quantidade += valor;
     }
 
     public void saida(int valor) {
-        if (valor <= 0) throw new IllegalArgumentException("ERRO: Valor invalido.");
-        if (valor > quantidade) throw new IllegalArgumentException("ERRO: Valor acima qua quantidade.");
+        if (valor <= 0) throw new IllegalArgumentException("Valor invalido.");
+        if (valor > quantidade) throw new IllegalArgumentException("Estoque insuficiente para saida.");
         quantidade -= valor;
     }
 
@@ -37,6 +39,7 @@ public class Estoque {
     }
 
     public void setQuantidade(Integer quantidade) {
+        if (quantidade <= 0) throw new FormatoIncorretoException("Valor invalido.");
         this.quantidade = quantidade;
     }
 }

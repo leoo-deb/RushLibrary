@@ -52,7 +52,7 @@ public class FuncionarioDAO extends DAO<Funcionario, Integer> {
                 funcionario.setNome(rs.getString(2));
                 funcionario.setCpf(rs.getString(3));
                 funcionario.setEmail(rs.getString(4));
-                funcionario.setCargo((Funcionario.Cargo) rs.getObject(5));
+                funcionario.setCargo(rs.getString(5));
                 funcionario.setAdimissao(rs.getObject(6, LocalDate.class));
             }
 
@@ -65,27 +65,29 @@ public class FuncionarioDAO extends DAO<Funcionario, Integer> {
 
     public Optional<Funcionario> findByCPF(String cpf) {
         String sql = "SELECT * FROM Funcionario WHERE cpf_func = ?";
-        Funcionario funcionario = new Funcionario();
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
 
             ps.setString(1, cpf);
-            ResultSet rs = ps.executeQuery();
+            try (ResultSet rs = ps.executeQuery()) {
 
-            while (rs.next()) {
-                funcionario.setId(rs.getInt(1));
-                funcionario.setNome(rs.getString(2));
-                funcionario.setCpf(rs.getString(3));
-                funcionario.setEmail(rs.getString(4));
-                funcionario.setCargo((Funcionario.Cargo) rs.getObject(5));
-                funcionario.setAdimissao(rs.getObject(6, LocalDate.class));
+                if (rs.next()) {
+                    Funcionario funcionario = new Funcionario();
+
+                    funcionario.setId(rs.getInt(1));
+                    funcionario.setNome(rs.getString(2));
+                    funcionario.setCpf(rs.getString(3));
+                    funcionario.setEmail(rs.getString(4));
+                    funcionario.setCargo(rs.getString(5));
+                    funcionario.setAdimissao(rs.getObject(6, LocalDate.class));
+
+                    return Optional.of(funcionario);
+                }
             }
-
-        } catch (Exception e) {
+            return Optional.empty();
+        } catch (SQLException e) {
             throw new RuntimeException("Nao foi possivel encontrar o funcionario.", e);
         }
-
-        return Optional.of(funcionario);
     }
 
     @Override
@@ -112,7 +114,7 @@ public class FuncionarioDAO extends DAO<Funcionario, Integer> {
             funcionario.setNome(rs.getString(2));
             funcionario.setCpf(rs.getString(3));
             funcionario.setEmail(rs.getString(4));
-            funcionario.setCargo((Funcionario.Cargo) rs.getObject(5));
+            funcionario.setCargo(rs.getString(5));
             funcionario.setAdimissao(rs.getObject(6, LocalDate.class));
         return funcionario;
     }

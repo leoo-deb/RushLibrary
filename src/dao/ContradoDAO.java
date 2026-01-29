@@ -30,9 +30,9 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
             ps.setInt(4, entity.getId_empresa());
             ps.executeUpdate();
 
-            ResultSet rs = ps.getGeneratedKeys();
-            if (rs.next()) return rs.getInt(1);
-
+            try (var rs = ps.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -77,27 +77,30 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
         String sql = """
                 SELECT *
                 FROM Contrato
-                WHERE id_contrato = ?""";
-        Contrato c = new Contrato();
+                WHERE codigo_contrato = ?""";
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
-            ResultSet rs = ps.executeQuery();
+            try (var rs = ps.executeQuery()) {
 
-            while (rs.next()) {
-                c.setCodigo(rs.getInt(1));
-                c.setTipo(rs.getString(2));
-                c.setVigencia(rs.getObject(3, LocalDate.class));
-                c.setVencimento(rs.getObject(4, LocalDate.class));
-                c.setId_empresa(rs.getInt(5));
+                if (rs.next()) {
+                    Contrato c = new Contrato();
+
+                    c.setCodigo(rs.getInt(1));
+                    c.setTipo(rs.getString(2));
+                    c.setVigencia(rs.getObject(3, LocalDate.class));
+                    c.setVencimento(rs.getObject(4, LocalDate.class));
+                    c.setId_empresa(rs.getInt(5));
+
+                    return Optional.of(c);
+                }
             }
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        return Optional.empty();
 
-        return Optional.of(c);
     }
 
     @Override
@@ -109,9 +112,10 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
 
          try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
 
-             ResultSet rs = ps.executeQuery();
-             while (rs.next()) {
-                 contratos.add(resultSetContrato(rs));
+             try (var rs = ps.executeQuery()) {
+                 while (rs.next()) {
+                     contratos.add(resultSetContrato(rs));
+                 }
              }
          } catch (SQLException e) {
              throw new RuntimeException(e);

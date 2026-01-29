@@ -29,9 +29,9 @@ public class EmpresaDAO extends DAO<Empresa, Integer> {
             ps.setString(3, entity.getCnpj());
             ps.executeUpdate();
 
-            ResultSet rs = ps.getGeneratedKeys();
-            if (rs.next()) return rs.getInt(1);
-
+            try (var rs = ps.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -81,24 +81,54 @@ public class EmpresaDAO extends DAO<Empresa, Integer> {
                 SELECT *
                 FROM Empresa
                 WHERE id_empresa = ?""";
-        Empresa empresa = new Empresa();
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+
             ps.setInt(1, integer);
-            ResultSet rs = ps.executeQuery();
+            try (var rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Empresa empresa = new Empresa();
 
-            while (rs.next()) {
-                empresa.setId(rs.getInt(1));
-                empresa.setNome(rs.getString(2));
-                empresa.setTitular(rs.getString(3));
-                empresa.setCnpj(rs.getString(4));
+                    empresa.setId(rs.getInt(1));
+                    empresa.setNome(rs.getString(2));
+                    empresa.setTitular(rs.getString(3));
+                    empresa.setCnpj(rs.getString(4));
+
+                    return Optional.of(empresa);
+                }
             }
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        return Optional.empty();
+    }
 
-        return Optional.of(empresa);
+    public Optional<Empresa> findByName(String name) {
+        String sql = """
+                SELECT *
+                FROM Empresa
+                WHERE nome_empresa = ?""";
+
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+
+            ps.setString(1, name);
+            try (var rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    Empresa empresa = new Empresa();
+
+                    empresa.setId(rs.getInt(1));
+                    empresa.setNome(rs.getString(2));
+                    empresa.setTitular(rs.getString(3));
+                    empresa.setCnpj(rs.getString(4));
+
+                    return Optional.of(empresa);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -110,15 +140,14 @@ public class EmpresaDAO extends DAO<Empresa, Integer> {
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
 
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                empresas.add(resultSetEmpresa(rs));
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    empresas.add(resultSetEmpresa(rs));
+                }
             }
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
         return empresas;
     }
 

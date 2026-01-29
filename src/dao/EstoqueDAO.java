@@ -5,10 +5,7 @@ import model.Estoque;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 
 import static utils.ConnectFactory.getConnection;
 
@@ -26,9 +23,9 @@ public class EstoqueDAO extends DAO<Estoque, Integer> {
             ps.setInt(2, entity.getQuantidade());
             ps.executeUpdate();
 
-            var rs = ps.getGeneratedKeys();
-            if (rs.next()) return rs.getInt(1);
-
+            try (var rs = ps.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -57,7 +54,7 @@ public class EstoqueDAO extends DAO<Estoque, Integer> {
     public void delete(Integer integer) {
         String sql = """
                 DELETE FROM Estoque
-                WHERE id_estoque = ?""";
+                WHERE id_livro = ?""";
 
         try (var ps = getConnection().prepareStatement(sql)) {
 
@@ -75,24 +72,53 @@ public class EstoqueDAO extends DAO<Estoque, Integer> {
                 SELECT *
                 FORM Estoque
                 WHERE id_estoque = ?""";
-        Estoque e = new Estoque();
 
         try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
+            try (var rs = ps.executeQuery()) {
 
-            var rs = ps.executeQuery();
-            while (rs.next()) {
-                e.setId(rs.getInt(1));
-                e.setId_livro(rs.getInt(2));
-                e.setQuantidade(rs.getInt(3));
+                if (rs.next()) {
+                    Estoque e = new Estoque();
+
+                    e.setId(rs.getInt(1));
+                    e.setId_livro(rs.getInt(2));
+                    e.setQuantidade(rs.getInt(3));
+
+                    return Optional.of(e);
+                }
             }
-
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }
+        return Optional.empty();
+    }
 
-        return Optional.of(e);
+    public Optional<Estoque> findByIdLivro(Integer integer) {
+        String sql = """
+                SELECT *
+                FORM Estoque
+                WHERE id_livro = ?""";
+
+        try (var ps = getConnection().prepareStatement(sql)) {
+
+            ps.setInt(1, integer);
+            try (var rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    Estoque e = new Estoque();
+
+                    e.setId(rs.getInt(1));
+                    e.setId_livro(rs.getInt(2));
+                    e.setQuantidade(rs.getInt(3));
+
+                    return Optional.of(e);
+                }
+            }
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -104,11 +130,11 @@ public class EstoqueDAO extends DAO<Estoque, Integer> {
 
         try (var ps = getConnection().prepareStatement(sql)) {
 
-            var rs = ps.executeQuery();
-            while (rs.next()) {
-                estoques.add(resultSetEstoque(rs));
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    estoques.add(resultSetEstoque(rs));
+                }
             }
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

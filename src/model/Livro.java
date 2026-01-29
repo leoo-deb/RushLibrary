@@ -1,5 +1,7 @@
 package model;
 
+import exceptions.FormatoIncorretoException;
+
 public class Livro {
     private Integer id;
     private String nome;
@@ -24,6 +26,9 @@ public class Livro {
     }
 
     public void setNome(String nome) {
+        if (!nome.matches(".{1,15}")) {
+            throw new FormatoIncorretoException("Nome invalido.");
+        }
         this.nome = nome;
     }
 
@@ -32,6 +37,9 @@ public class Livro {
     }
 
     public void setSinopse(String sinopse) {
+        if (!sinopse.matches(".{3,200}")) {
+            throw new IllegalArgumentException("Sinopse invalida.");
+        }
         this.sinopse = sinopse;
     }
 
@@ -40,6 +48,9 @@ public class Livro {
     }
 
     public void setAutor(String autor) {
+        if (!autor.matches(".{3,20}")) {
+            throw new IllegalArgumentException("Autor invalid.");
+        }
         this.autor = autor;
     }
 
@@ -56,6 +67,9 @@ public class Livro {
     }
 
     public void setTipo(String tipo) {
+        if (!tipo.matches(".{3,15}")) {
+            throw new IllegalArgumentException("Autor invalid.");
+        }
         this.tipo = tipo;
     }
 

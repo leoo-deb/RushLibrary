@@ -17,18 +17,17 @@ public class RegistrosDAO extends DAO<Registros, Integer> {
     @Override
     public Integer insert(Registros entity) {
         String sql = """
-                INSERT INTO Registros (id_estoque, id_func, desc_reg, tipo_reg, data_reg, id_cli, dataentrega_reg)
-                VALUES (?, ?, ?, ?, ?, ?, ?)""";
+                INSERT INTO Registros (id_estoque, id_func, desc_reg, tipo_reg, id_cli, dataentrega_reg)
+                VALUES (?, ?, ?, ?, ?, ?)""";
 
         try (var ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setInt(1, entity.getId_estoque());
             ps.setInt(2, entity.getId_funcionario());
             ps.setString(3, entity.getDescricao());
-            ps.setObject(4, entity.getTipo());
-            ps.setObject(5, entity.getData());
-            ps.setInt(6, entity.getId_cliente());
-            ps.setObject(7, entity.getDataEntrega());
+            ps.setString(4, entity.getTipo());
+            ps.setInt(5, entity.getId_cliente());
+            ps.setObject(6, entity.getDataEntrega());
             ps.executeUpdate();
 
             ResultSet rs = ps.getGeneratedKeys();
@@ -46,28 +45,31 @@ public class RegistrosDAO extends DAO<Registros, Integer> {
                 SELECT *
                 FROM Registros
                 WHERE id_regi = ?""";
-        Registros r = new Registros();
 
         try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
-            var rs = ps.executeQuery();
+            try (var rs = ps.executeQuery()) {
 
-            while (rs.next()) {
-                r.setId(rs.getInt(1));
-                r.setId_estoque(rs.getInt(2));
-                r.setId_funcionario(rs.getInt(3));
-                r.setDescricao(rs.getString(4));
-                r.setTipo(rs.getObject(5, Registros.Tipo.class));
-                r.setData(rs.getObject(6, LocalDate.class));
-                r.setId_cliente(rs.getInt(7));
-                r.setDataEntrega(rs.getObject(7, LocalDate.class));
+                if (rs.next()) {
+                    Registros r = new Registros();
+
+                    r.setId(rs.getInt(1));
+                    r.setId_estoque(rs.getInt(2));
+                    r.setId_funcionario(rs.getInt(3));
+                    r.setDescricao(rs.getString(4));
+                    r.setTipo(rs.getString(5));
+                    r.setData(rs.getObject(6, LocalDate.class));
+                    r.setId_cliente(rs.getInt(7));
+                    r.setDataEntrega(rs.getObject(7, LocalDate.class));
+
+                    return Optional.of(r);
+                }
             }
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return Optional.of(r);
+        return Optional.empty();
     }
 
     @Override
@@ -79,11 +81,11 @@ public class RegistrosDAO extends DAO<Registros, Integer> {
 
         try (var ps = getConnection().prepareStatement(sql)) {
 
-            var rs = ps.executeQuery();
-            while (rs.next()) {
-                registros.add(resultSetRegistros(rs));
+            try (var rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    registros.add(resultSetRegistros(rs));
+                }
             }
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -97,7 +99,7 @@ public class RegistrosDAO extends DAO<Registros, Integer> {
         r.setId_estoque(rs.getInt(2));
         r.setId_funcionario(rs.getInt(3));
         r.setDescricao(rs.getString(4));
-        r.setTipo(rs.getObject(5, Registros.Tipo.class));
+        r.setTipo(rs.getString(5));
         r.setData(rs.getObject(6, LocalDate.class));
         r.setId_cliente(rs.getInt(7));
         r.setDataEntrega(rs.getObject(7, LocalDate.class));

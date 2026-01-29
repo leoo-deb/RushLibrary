@@ -17,7 +17,7 @@ public class LivroDAO extends DAO<Livro, Integer> {
     @Override
     public Integer insert(Livro entity) {
         String sql = """
-                INSERT INTO Livros (nome_livro, sinopse_livro, autor_livro, isbn_livro, tipo_livro, id_categoria, codigo_contrato)
+                INSERT INTO Livro (nome_livro, sinopse_livro, autor_livro, isbn_livro, tipo_livro, id_categoria, codigo_contrato)
                 VALUES (?, ?, ?, ?, ?, ?, ?)""";
 
         try (var ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -83,27 +83,96 @@ public class LivroDAO extends DAO<Livro, Integer> {
                 SELECT *
                 FROM Livro
                 WHERE id_livro = ?""";
-        Livro l = new Livro();
 
         try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
-            var rs = ps.executeQuery();
+            try (var rs = ps.executeQuery()) {
 
-            while (rs.next()) {
-                l.setId(rs.getInt(1));
-                l.setNome(rs.getString(2));
-                l.setSinopse(rs.getString(3));
-                l.setAutor(rs.getString(4));
-                l.setIsbn(rs.getInt(5));
-                l.setId_categoria(rs.getInt(6));
-                l.setId_contrato(rs.getInt(7));
+                if (rs.next()) {
+                    Livro l = new Livro();
+
+                    l.setId(rs.getInt(1));
+                    l.setNome(rs.getString(2));
+                    l.setSinopse(rs.getString(3));
+                    l.setAutor(rs.getString(4));
+                    l.setIsbn(rs.getInt(5));
+                    l.setTipo(rs.getString(6));
+                    l.setId_categoria(rs.getInt(7));
+                    l.setId_contrato(rs.getInt(8));
+
+                    return Optional.of(l);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<Livro> findByName(String name) {
+        String sql = """
+                SELECT *
+                FROM Livro
+                WHERE nome_livro = ?""";
+
+        try (var ps = getConnection().prepareStatement(sql)) {
+
+            ps.setString(1, name);
+            try (var rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    Livro l = new Livro();
+
+                    l.setId(rs.getInt(1));
+                    l.setNome(rs.getString(2));
+                    l.setSinopse(rs.getString(3));
+                    l.setAutor(rs.getString(4));
+                    l.setIsbn(rs.getInt(5));
+                    l.setTipo(rs.getString(6));
+                    l.setId_categoria(rs.getInt(7));
+                    l.setId_contrato(rs.getInt(8));
+
+                    return Optional.of(l);
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
-        return Optional.of(l);
+        return Optional.empty();
+    }
+
+    public Optional<Livro> findByIsbn(Integer isbn) {
+        String sql = """
+                SELECT *
+                FROM Livro
+                WHERE isbn_livro = ?""";
+
+        try (var ps = getConnection().prepareStatement(sql)) {
+
+            ps.setInt(1, isbn);
+            try (var rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    Livro l = new Livro();
+
+                    l.setId(rs.getInt(1));
+                    l.setNome(rs.getString(2));
+                    l.setSinopse(rs.getString(3));
+                    l.setAutor(rs.getString(4));
+                    l.setIsbn(rs.getInt(5));
+                    l.setTipo(rs.getString(6));
+                    l.setId_categoria(rs.getInt(7));
+                    l.setId_contrato(rs.getInt(8));
+
+                    return Optional.of(l);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -116,7 +185,7 @@ public class LivroDAO extends DAO<Livro, Integer> {
         try (var ps = getConnection().prepareStatement(sql)) {
 
             var rs = ps.executeQuery();
-            while (rs.next()) {
+            if (rs.next()) {
                 livros.add(resultSetLivro(rs));
             }
 
