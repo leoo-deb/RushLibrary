@@ -70,7 +70,7 @@ public class EstoqueDAO extends DAO<Estoque, Integer> {
     public Optional<Estoque> findById(Integer integer) {
         String sql = """
                 SELECT *
-                FORM Estoque
+                FROM Estoque
                 WHERE id_estoque = ?""";
 
         try (var ps = getConnection().prepareStatement(sql)) {
@@ -97,7 +97,7 @@ public class EstoqueDAO extends DAO<Estoque, Integer> {
     public Optional<Estoque> findByIdLivro(Integer integer) {
         String sql = """
                 SELECT *
-                FORM Estoque
+                FROM Estoque
                 WHERE id_livro = ?""";
 
         try (var ps = getConnection().prepareStatement(sql)) {

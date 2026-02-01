@@ -2,11 +2,12 @@ package model;
 
 import exceptions.FormatoIncorretoException;
 
-public class Empresa {
+public class Fornecedor {
     private Integer id;
     private String nome;
     private String titular;
     private String cnpj;
+    private Integer CODIGO_CONTRATO;
 
     public Integer getId() {
         return id;
@@ -21,9 +22,6 @@ public class Empresa {
     }
 
     public void setNome(String nome) {
-        if (!nome.matches("[A-Za-z\\d]{3,30}")) {
-            throw new FormatoIncorretoException("Nome invalido.");
-        }
         this.nome = nome;
     }
 
@@ -32,9 +30,6 @@ public class Empresa {
     }
 
     public void setTitular(String titular) {
-        if (!titular.matches("[A-Za-z]\\s[A-Za-z]{3,30}")) {
-            throw new FormatoIncorretoException("Titular invalido.");
-        }
         this.titular = titular;
     }
 
@@ -43,9 +38,14 @@ public class Empresa {
     }
 
     public void setCnpj(String cnpj) {
-        if (!cnpj.matches("(\\./-)?\\d{14,50}")) {
-            throw new FormatoIncorretoException("CNPJ invalida.");
-        }
         this.cnpj = cnpj;
+    }
+
+    public Integer getCODIGO_CONTRATO() {
+        return CODIGO_CONTRATO;
+    }
+
+    public void setCODIGO_CONTRATO(Integer CODIGO_CONTRATO) {
+        this.CODIGO_CONTRATO = CODIGO_CONTRATO;
     }
 }

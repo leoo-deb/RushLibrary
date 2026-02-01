@@ -8,10 +8,10 @@ public class Livro {
     private String sinopse;
     private String autor;
     private Integer isbn;
+    private String genero;
     private String tipo;
 
-    private Integer id_categoria;
-    private Integer id_contrato;
+    private Integer id_fornecedor;
 
     public Integer getId() {
         return id;
@@ -26,9 +26,6 @@ public class Livro {
     }
 
     public void setNome(String nome) {
-        if (!nome.matches(".{1,15}")) {
-            throw new FormatoIncorretoException("Nome invalido.");
-        }
         this.nome = nome;
     }
 
@@ -37,9 +34,6 @@ public class Livro {
     }
 
     public void setSinopse(String sinopse) {
-        if (!sinopse.matches(".{3,200}")) {
-            throw new IllegalArgumentException("Sinopse invalida.");
-        }
         this.sinopse = sinopse;
     }
 
@@ -48,9 +42,6 @@ public class Livro {
     }
 
     public void setAutor(String autor) {
-        if (!autor.matches(".{3,20}")) {
-            throw new IllegalArgumentException("Autor invalid.");
-        }
         this.autor = autor;
     }
 
@@ -67,25 +58,22 @@ public class Livro {
     }
 
     public void setTipo(String tipo) {
-        if (!tipo.matches(".{3,15}")) {
-            throw new IllegalArgumentException("Autor invalid.");
-        }
         this.tipo = tipo;
     }
 
-    public Integer getId_categoria() {
-        return id_categoria;
+    public String getGenero() {
+        return genero;
     }
 
-    public void setId_categoria(Integer id_categoria) {
-        this.id_categoria = id_categoria;
+    public void setGenero(String genero) {
+        this.genero = genero;
     }
 
-    public Integer getId_contrato() {
-        return id_contrato;
+    public Integer getId_fornecedor() {
+        return id_fornecedor;
     }
 
-    public void setId_contrato(Integer id_contrato) {
-        this.id_contrato = id_contrato;
+    public void setId_fornecedor(Integer id_fornecedor) {
+        this.id_fornecedor = id_fornecedor;
     }
 }

@@ -17,7 +17,7 @@ public class LivroDAO extends DAO<Livro, Integer> {
     @Override
     public Integer insert(Livro entity) {
         String sql = """
-                INSERT INTO Livro (nome_livro, sinopse_livro, autor_livro, isbn_livro, tipo_livro, id_categoria, codigo_contrato)
+                INSERT INTO Livro (nome_livro, sinopse_livro, autor_livro, isbn_livro, genero_livro, tipo_livro, id_fornc)
                 VALUES (?, ?, ?, ?, ?, ?, ?)""";
 
         try (var ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -26,18 +26,17 @@ public class LivroDAO extends DAO<Livro, Integer> {
             ps.setString(2, entity.getSinopse());
             ps.setString(3, entity.getAutor());
             ps.setInt(4, entity.getIsbn());
-            ps.setString(5, entity.getTipo());
-            ps.setInt(6, entity.getId_categoria());
-            ps.setInt(7, entity.getId_contrato());
+            ps.setString(5, entity.getGenero());
+            ps.setString(6, entity.getTipo());
+            ps.setInt(7, entity.getId_fornecedor());
             ps.executeUpdate();
 
-            var rs = ps.getGeneratedKeys();
-            if (rs.next()) return rs.getInt(1);
-
+            try (var rs = ps.getGeneratedKeys()) {
+                if (rs.next()) return rs.getInt(1);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
         throw new NoSuchElementException("ERROR: Nao foi possivel recuperar ID.");
     }
 
@@ -45,7 +44,7 @@ public class LivroDAO extends DAO<Livro, Integer> {
     public void update(Livro entity) {
         String sql = """
                 UPDATE Livro
-                SET nome_livro = ?, sinopse_livro = ?, autor_livro = ?
+                SET nome_livro = ?, sinopse_livro = ?, autor_livro = ?, genero_livro = ?
                 WHERE id_livro = ?""";
 
         try (var ps = getConnection().prepareStatement(sql)) {
@@ -53,7 +52,8 @@ public class LivroDAO extends DAO<Livro, Integer> {
             ps.setString(1, entity.getNome());
             ps.setString(2, entity.getSinopse());
             ps.setString(3, entity.getAutor());
-            ps.setInt(4, entity.getId());
+            ps.setString(4, entity.getGenero());
+            ps.setInt(5, entity.getId());
             ps.executeUpdate();
 
         } catch (SQLException e) {
@@ -88,7 +88,6 @@ public class LivroDAO extends DAO<Livro, Integer> {
 
             ps.setInt(1, integer);
             try (var rs = ps.executeQuery()) {
-
                 if (rs.next()) {
                     Livro l = new Livro();
 
@@ -97,9 +96,9 @@ public class LivroDAO extends DAO<Livro, Integer> {
                     l.setSinopse(rs.getString(3));
                     l.setAutor(rs.getString(4));
                     l.setIsbn(rs.getInt(5));
-                    l.setTipo(rs.getString(6));
-                    l.setId_categoria(rs.getInt(7));
-                    l.setId_contrato(rs.getInt(8));
+                    l.setGenero(rs.getString(6));
+                    l.setTipo(rs.getString(7));
+                    l.setId_fornecedor(rs.getInt(8));
 
                     return Optional.of(l);
                 }
@@ -129,9 +128,9 @@ public class LivroDAO extends DAO<Livro, Integer> {
                     l.setSinopse(rs.getString(3));
                     l.setAutor(rs.getString(4));
                     l.setIsbn(rs.getInt(5));
-                    l.setTipo(rs.getString(6));
-                    l.setId_categoria(rs.getInt(7));
-                    l.setId_contrato(rs.getInt(8));
+                    l.setGenero(rs.getString(6));
+                    l.setTipo(rs.getString(7));
+                    l.setId_fornecedor(rs.getInt(8));
 
                     return Optional.of(l);
                 }
@@ -162,9 +161,9 @@ public class LivroDAO extends DAO<Livro, Integer> {
                     l.setSinopse(rs.getString(3));
                     l.setAutor(rs.getString(4));
                     l.setIsbn(rs.getInt(5));
-                    l.setTipo(rs.getString(6));
-                    l.setId_categoria(rs.getInt(7));
-                    l.setId_contrato(rs.getInt(8));
+                    l.setGenero(rs.getString(6));
+                    l.setTipo(rs.getString(7));
+                    l.setId_fornecedor(rs.getInt(8));
 
                     return Optional.of(l);
                 }
@@ -185,7 +184,7 @@ public class LivroDAO extends DAO<Livro, Integer> {
         try (var ps = getConnection().prepareStatement(sql)) {
 
             var rs = ps.executeQuery();
-            if (rs.next()) {
+            while (rs.next()) {
                 livros.add(resultSetLivro(rs));
             }
 
@@ -204,8 +203,9 @@ public class LivroDAO extends DAO<Livro, Integer> {
         l.setSinopse(rs.getString(3));
         l.setAutor(rs.getString(4));
         l.setIsbn(rs.getInt(5));
-        l.setId_categoria(rs.getInt(6));
-        l.setId_contrato(rs.getInt(7));
+        l.setGenero(rs.getString(6));
+        l.setTipo(rs.getString(7));
+        l.setId_fornecedor(rs.getInt(8));
 
         return l;
     }

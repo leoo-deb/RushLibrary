@@ -2,6 +2,7 @@ package dao;
 
 import model.Cliente;
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -14,16 +15,17 @@ public class ClienteDAO extends DAO<Cliente, Integer> {
     @Override
     public Integer insert(Cliente entity) {
         String sql = """
-                INSERT INTO Cliente (nome_cli, cpf_cli, email_cli, numero_cli)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO Cliente (nome_cli, cpf_cli, email_cli, numero_cli, quantidade_livro)
+                VALUES (?, ?, ?, ?, ?)
                 """;
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (var ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, entity.getNome());
             ps.setString(2, entity.getCpf());
             ps.setString(3, entity.getEmail());
             ps.setString(4, entity.getNumero());
+            ps.setInt(5, entity.getQuantidadeLivro());
             ps.executeUpdate();
 
             ResultSet rs = ps.getGeneratedKeys();
@@ -40,16 +42,17 @@ public class ClienteDAO extends DAO<Cliente, Integer> {
     public void update(Cliente entity) {
         String sql = """
                 UPDATE Cliente
-                SET nome_cli = ?, cpf_cli = ?, email_cli = ?, numero_cli = ?
+                SET nome_cli = ?, cpf_cli = ?, email_cli = ?, numero_cli = ?, quantidade_livro = ?
                 WHERE id_cli = ?""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setString(1, entity.getNome());
             ps.setString(2, entity.getCpf());
             ps.setString(3, entity.getEmail());
             ps.setString(4, entity.getNumero());
-            ps.setInt(5, entity.getId());
+            ps.setInt(5, entity.getQuantidadeLivro());
+            ps.setInt(6, entity.getId());
             ps.executeUpdate();
 
         } catch (SQLException e) {
@@ -64,7 +67,7 @@ public class ClienteDAO extends DAO<Cliente, Integer> {
                 FROM Cliente
                 WHERE id_cli = ?""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
             ps.executeUpdate();
@@ -80,7 +83,7 @@ public class ClienteDAO extends DAO<Cliente, Integer> {
                 FROM Cliente
                 WHERE cpf_cli = ?""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setString(1, cpf);
             ps.executeUpdate();
@@ -97,7 +100,7 @@ public class ClienteDAO extends DAO<Cliente, Integer> {
                 FROM Cliente
                 WHERE id_cli = ?""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
             try (var rs = ps.executeQuery()) {
@@ -110,23 +113,25 @@ public class ClienteDAO extends DAO<Cliente, Integer> {
                     c.setCpf(rs.getString(3));
                     c.setEmail(rs.getString(4));
                     c.setNumero(rs.getString(5));
+                    c.setDataCadastro(rs.getObject(6, LocalDate.class));
+                    c.setQuantidadeLivro(rs.getInt(7));
 
                     return Optional.of(c);
                 }
             }
+            return Optional.empty();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return Optional.empty();
     }
 
     public Optional<Cliente> findByCPF(String cpf) {
         String sql = """
                 SELECT *
                 FROM Cliente
-                WHERE id_cli = ?""";
+                WHERE cpf_cli = ?""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setString(1, cpf);
             try (var rs = ps.executeQuery()) {
@@ -139,36 +144,36 @@ public class ClienteDAO extends DAO<Cliente, Integer> {
                     c.setCpf(rs.getString(3));
                     c.setEmail(rs.getString(4));
                     c.setNumero(rs.getString(5));
+                    c.setDataCadastro(rs.getObject(6, LocalDate.class));
+                    c.setQuantidadeLivro(rs.getInt(7));
 
                     return Optional.of(c);
                 }
             }
+            return Optional.empty();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-        return Optional.empty();
     }
 
     @Override
     public List<Cliente> findAll() {
         String sql = """
                 SELECT *
-                FROM Clientes""";
+                FROM Cliente""";
         List<Cliente> clientes = new ArrayList<>();
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
 
             try (var rs = ps.executeQuery()) {
                 while (rs.next()) {
                     clientes.add(resultSetCliente(rs));
                 }
             }
+            return clientes;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-        return clientes;
     }
 
     private Cliente resultSetCliente(ResultSet rs) throws SQLException {
@@ -179,6 +184,8 @@ public class ClienteDAO extends DAO<Cliente, Integer> {
         c.setCpf(rs.getString(3));
         c.setEmail(rs.getString(4));
         c.setNumero(rs.getString(5));
+        c.setDataCadastro(rs.getObject(6, LocalDate.class));
+        c.setQuantidadeLivro(rs.getInt(7));
 
         return c;
     }

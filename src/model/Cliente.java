@@ -1,7 +1,5 @@
 package model;
 
-import exceptions.FormatoIncorretoException;
-
 import java.time.LocalDate;
 
 public class Cliente {
@@ -10,6 +8,16 @@ public class Cliente {
     private String cpf;
     private String email;
     private String numero;
+    private LocalDate dataCadastro;
+    private Integer quantidadeLivro = 0;
+
+    public void emprestimoLivro(int valor) {
+        quantidadeLivro += valor;
+    }
+
+    public void retornoLivro(int valor) {
+        quantidadeLivro -= valor;
+    }
 
     public Integer getId() {
         return id;
@@ -24,9 +32,6 @@ public class Cliente {
     }
 
     public void setNome(String nome) {
-        if (!nome.matches("[A-Za-z]\\s[A-Za-z]{3,45}")) {
-            throw new FormatoIncorretoException("Nome invalido.");
-        }
         this.nome = nome;
     }
 
@@ -35,9 +40,6 @@ public class Cliente {
     }
 
     public void setCpf(String cpf) {
-        if (!cpf.matches("\\d{11,25}")) {
-            throw new FormatoIncorretoException("CPF invalido.");
-        }
         this.cpf = cpf;
     }
 
@@ -46,9 +48,6 @@ public class Cliente {
     }
 
     public void setEmail(String email) {
-        if (!email.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,6}")) {
-            throw new FormatoIncorretoException("Email invalido.");
-        }
         this.email = email;
     }
 
@@ -60,4 +59,19 @@ public class Cliente {
         this.numero = numero;
     }
 
+    public LocalDate getDataCadastro() {
+        return dataCadastro;
+    }
+
+    public void setDataCadastro(LocalDate dataCadastro) {
+        this.dataCadastro = dataCadastro;
+    }
+
+    public Integer getQuantidadeLivro() {
+        return quantidadeLivro;
+    }
+
+    public void setQuantidadeLivro(Integer quantidadeLivro) {
+        this.quantidadeLivro = quantidadeLivro;
+    }
 }

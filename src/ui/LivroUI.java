@@ -2,16 +2,22 @@ package ui;
 
 import model.*;
 import services.*;
-
-import java.time.LocalDate;
-import java.time.Year;
-import java.util.ArrayList;
 import java.util.List;
 import static io.Input.reader;
 import static io.Output.write;
 
-public record LivroUI(LivroService livroService, EstoqueService estoqueService, ClienteService clienteService,
-                      CategoriaService categoriaService, ContratoService contratoService) {
+public class LivroUI {
+    private final LivroService livroService;
+    private final FornecedorService fornecedorService;
+
+    private final EstoqueUI estoqueUI;
+
+    public LivroUI(LivroService livroService, ClienteService clienteService, FornecedorService fornecedorService) {
+        this.livroService = livroService;
+        this.fornecedorService = fornecedorService;
+
+        this.estoqueUI = new EstoqueUI(livroService, clienteService);
+    }
 
     public void gerenciarLivro(Funcionario funcionario) {
         while (true) {
@@ -24,13 +30,13 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
             if (op == 3) atualizarLivro();
             if (op == 4) buscarLivro();
             if (op == 5) listarLivros();
-            if (op == 6) gerenciarCategoria(funcionario);
-            if (op == 7) gerenciarEstoque(funcionario);
+            if (op == 6) estoqueUI.gerenciarEstoque(funcionario);
             if (op == 0) break;
         }
 
     }
 
+    // — > CRUD dos livros
     private void cadastrarLivro(Funcionario funcionario) {
         livroService.validacaoGerente(funcionario);
 
@@ -40,24 +46,40 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
         String sinopse = reader("Sinope:");
         String autor = reader("Autor:");
         Integer isbn = Integer.parseInt(reader("ISBN:"));
-        String tipo = reader("Tipo:");
+        String genero = reader("Genero:");
+        String tipo;
 
-        Integer idCategoria = Integer.parseInt(reader("ID categoria:"));
-        Integer codeContrato = Integer.parseInt(reader("Codigo de contrato:"));
+        while (true) {
+            write("""
+                    Selecione o cargo:
+                    [1] Fisico
+                    [2] Digital
+                    [3] Ebook""");
+            int escolha = Integer.parseInt(reader(">"));
+
+            if (escolha == 1) {
+                tipo = "FISICO";
+                break;
+            }
+            if (escolha == 2) {
+                tipo = "DIGITAL";
+                break;
+            }
+            if (escolha == 3) {
+                tipo = "EBOOK";
+                break;
+            }
+            write("ERROR: Dado incorreto.");
+        }
+
+        Integer codeFornecedor = Integer.parseInt(reader("Codigo de Fornecedor:"));
+        Fornecedor fornecedor = fornecedorService.buscarEmpresa(codeFornecedor);
+
         Integer quantInicial = Integer.parseInt(reader("Quantidade inicial:"));
 
-        String desc = reader("Descricao:");
-
-        categoriaService.buscarCategoria(idCategoria);
-        contratoService.buscarContrato(codeContrato);
-
-        Integer idLivroCadastrado = livroService.cadastrarLivro(nome, sinopse, autor, isbn,
-                tipo, idCategoria, codeContrato);
-        Integer idEstoqueCadastrado = estoqueService.cadastrarEstoque(idLivroCadastrado, quantInicial);
-
-        estoqueService.registrarCadastro(idEstoqueCadastrado, funcionario.getId(), desc);
-
+        livroService.cadastrarLivro(funcionario, nome, sinopse, autor, isbn, genero, tipo, fornecedor, quantInicial);
         limparTela();
+
         write("═══════════════ LIVRO CADASTRADO ═══════════════");
         write(String.format("""
                 Informacoes cadastrais:
@@ -65,11 +87,11 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
                 Sinopse: %s
                 Autor: %s
                 ISBN: %d
+                Genero: %s
                 Tipo: %s
                 
-                Categoria: %d
-                Cod. de Contrato: %d
-                Quant. inicial: %d""", nome, sinopse, autor, isbn, tipo, idCategoria, codeContrato, quantInicial));
+                Cod. de Fornecedor: #%d
+                Quant. inicial: %d""", nome, sinopse, autor, isbn, tipo, tipo, codeFornecedor, quantInicial));
 
         aguardandoEnter();
     }
@@ -78,32 +100,33 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
         livroService.validacaoGerente(funcionario);
 
         limparTela();
-        write("═══════════════ REMOCAO DE LIVRO ═══════════════");
-        Integer isbn = Integer.parseInt(reader("Digite o ISBN do livro:\n>"));
-        Livro l = livroService.buscarLivro(isbn);
-
-        write(String.format("""
-                Informacoes do livro:
-                Nome: %s
-                Sinopse: %s
-                Autor: %s
-                ISBN: %d
-                Tipo: %s""", l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getTipo()));
-
-        String confirmacao = reader("""
-                Deseja realmente excluir esse livro?
-                AVISO: Ao confirmar, todos os dados deste livro serao removidas.
-                >""").toUpperCase();
-
-        if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-            livroService.removerLivro(isbn);
-            estoqueService.removerEstoque(l.getId());
-            write("Operacao concluida.");
-            aguardandoEnter();
-        } else {
-            write("Operacao concelada.");
-            aguardandoEnter();
-        }
+        write("═══════════════ MANUTENCAO ═══════════════");
+//        Integer isbn = Integer.parseInt(reader("Digite o ISBN do livro:\n>"));
+//        Livro l = livroService.buscarLivro(isbn);
+//
+//        write(String.format("""
+//                Informacoes do livro:
+//                Nome: %s
+//                Sinopse: %s
+//                Autor: %s
+//                ISBN: %d
+//                Tipo: %s""", l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getTipo()));
+//
+//        String confirmacao = reader("""
+//                Deseja realmente excluir esse livro?
+//                AVISO: Ao confirmar, todos os dados deste livro serao removidas.
+//                >""").toUpperCase();
+//
+//        if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
+//            livroService.removerLivro(isbn);
+//            estoqueService.removerEstoque(l.getId());
+//            write("Operacao concluida.");
+//            aguardandoEnter();
+//        } else {
+//            write("Operacao concelada.");
+//            aguardandoEnter();
+//        }
+        aguardandoEnter();
     }
 
     private void atualizarLivro() {
@@ -122,7 +145,8 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
                         Sinopse: %s
                         Autor: %s
                         ISBN: %d
-                        Tipo: %s""", l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getTipo()));
+                        Genero: %s
+                        Tipo: %s""", l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getGenero(), l.getTipo()));
                 aguardandoEnter();
 
                 String nome = reader("Digite o novo nome:\n>");
@@ -132,26 +156,26 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
                         >""").toUpperCase();
 
                 if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    Livro livroAtualizado = livroService.atualizarLivro(isbn, nome, null, null);
+                    Livro livroAtualizado = livroService.atualizarLivro(l, nome, null, null);
 
                     write(String.format("""
-                                    Informacoes do livro atualizado:
-                                    Nome: %s
-                                    Sinopse: %s
-                                    Autor: %s
-                                    ISBN: %d
-                                    Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
-                            livroAtualizado.getIsbn(), livroAtualizado.getTipo()));
-                    aguardandoEnter();
+                        Informacoes do livro atualizado:
+                        Nome: %s
+                        Sinopse: %s
+                        Autor: %s
+                        ISBN: %d
+                        Genero: %s
+                        Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
+                            livroAtualizado.getIsbn(), livroAtualizado.getGenero(), livroAtualizado.getTipo()));
                 } else {
                     write("Operacao concelada.");
-                    aguardandoEnter();
                 }
+                aguardandoEnter();
             }
 
             if (op == 2) {
                 Integer isbn = Integer.parseInt(reader("Digite a ISBN do livro:\n>"));
-                Livro l = livroService.buscarLivro(isbn);
+                Livro livro = livroService.buscarLivro(isbn);
 
                 write(String.format("""
                         Informacoes do livro:
@@ -159,7 +183,9 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
                         Sinopse: %s
                         Autor: %s
                         ISBN: %d
-                        Tipo: %s""", l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getTipo()));
+                        Genero: %s
+                        Tipo: %s""", livro.getNome(), livro.getSinopse(), livro.getAutor(), livro.getIsbn(),
+                        livro.getGenero(), livro.getTipo()));
                 aguardandoEnter();
 
                 String sinopse = reader("Digite a nova sinopse:\n>");
@@ -169,26 +195,26 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
                         >""").toUpperCase();
 
                 if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    Livro livroAtualizado = livroService.atualizarLivro(isbn, null, sinopse, null);
+                    Livro livroAtualizado = livroService.atualizarLivro(livro, null, sinopse, null);
 
                     write(String.format("""
-                                    Informacoes do livro atualizado:
-                                    Nome: %s
-                                    Sinopse: %s
-                                    Autor: %s
-                                    ISBN: %d
-                                    Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
-                            livroAtualizado.getIsbn(), livroAtualizado.getTipo()));
-                    aguardandoEnter();
+                        Informacoes do livro atualizado:
+                        Nome: %s
+                        Sinopse: %s
+                        Autor: %s
+                        ISBN: %d
+                        Genero: %s
+                        Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
+                            livroAtualizado.getIsbn(), livroAtualizado.getGenero(), livroAtualizado.getTipo()));
                 } else {
                     write("Operacao concelada.");
-                    aguardandoEnter();
                 }
+                aguardandoEnter();
             }
 
             if (op == 3) {
                 Integer isbn = Integer.parseInt(reader("Digite a ISBN do livro:\n>"));
-                Livro l = livroService.buscarLivro(isbn);
+                Livro livro = livroService.buscarLivro(isbn);
 
                 write(String.format("""
                         Informacoes do livro:
@@ -196,8 +222,9 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
                         Sinopse: %s
                         Autor: %s
                         ISBN: %d
-                        Tipo: %s""", l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getTipo()));
-                aguardandoEnter();
+                        Genero: %s
+                        Tipo: %s""", livro.getNome(), livro.getSinopse(), livro.getAutor(), livro.getIsbn(),
+                        livro.getGenero(), livro.getTipo()));
 
                 String autor = reader("Digite o novo autor:\n>");
 
@@ -206,21 +233,21 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
                         >""").toUpperCase();
 
                 if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    Livro livroAtualizado = livroService.atualizarLivro(isbn, null, null, autor);
+                    Livro livroAtualizado = livroService.atualizarLivro(livro, null, null, autor);
 
                     write(String.format("""
-                                    Informacoes do livro atualizado:
-                                    Nome: %s
-                                    Sinopse: %s
-                                    Autor: %s
-                                    ISBN: %d
-                                    Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
-                            livroAtualizado.getIsbn(), livroAtualizado.getTipo()));
-                    aguardandoEnter();
+                        Informacoes do livro atualizado:
+                        Nome: %s
+                        Sinopse: %s
+                        Autor: %s
+                        ISBN: %d
+                        Genero: %s
+                        Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
+                            livroAtualizado.getIsbn(), livroAtualizado.getGenero(), livroAtualizado.getTipo()));
                 } else {
                     write("Operacao concelada.");
-                    aguardandoEnter();
                 }
+                aguardandoEnter();
             }
 
             if (op == 0) break;
@@ -230,46 +257,33 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
     private void buscarLivro() {
         limparTela();
         write("═══════════════ BUSCA DE LIVROS ═══════════════");
-        String busca = reader("Busque pelo nome, autor ou ISBN\n>");
+        String busca = reader("Busque pelo nome ou autor\n>");
+        List<Livro> resultado = livroService.buscaFiltradaLivro(busca);
 
-        livroService
-                .listarLivros()
-                .stream()
-                .filter(l -> l.getIsbn() == Integer.parseInt(busca)
-                        || l.getNome().contains(busca)
-                        || l.getAutor().contains(busca))
-                .forEach(l -> {
-                    Estoque e = estoqueService.buscarIdLivro(l.getId());
-                    write(String.format("""
-                                Informacoes do livro:
-                                ID: %d
-                                Nome: %s
-                                Sinopse: %s
-                                Autor: %s
-                                ISBN: %d
-                                Tipo: %s
-                                Estoque: %d""", l.getId(), l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getTipo(), e.getQuantidade()));
-                });
-
-        if (!livroService.listarLivros().isEmpty()) {
-            livroService
-                    .listarLivros()
-                    .stream()
-                    .filter(l -> l.getIsbn() == Integer.parseInt(busca)
-                            || l.getNome().contains(busca)
-                            || l.getAutor().contains(busca))
-                    .forEach(l -> write(String.format("""
-                                Informacoes do livro:
-                                Nome: %s
-                                Sinopse: %s
-                                Autor: %s
-                                ISBN: %d
-                                Tipo: %s""", l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getTipo())));
-            aguardandoEnter();
+        if (!resultado.isEmpty()) {
+            resultado
+                    .forEach(l -> {
+                        Estoque e = livroService.buscarEstoqueIdLivro(l.getId());
+                        write(String.format("""
+                            Informacoes do livro:
+                            Nome: %s
+                            Sinopse: %s
+                            Autor: %s
+                            ISBN: %d
+                            Genero: %s
+                            Tipo: %s
+                            
+                            Code. Fornecedor: #%d
+                            Estoque: #%d
+                            Quantidade: %d
+                            ═══════════════════════════════════════════════""",
+                                l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(),
+                                l.getGenero(), l.getTipo(), l.getId_fornecedor(), e.getId(), e.getQuantidade()));
+                    });
         } else {
             write("ERROR: Nenhum livro encontrado.");
-            aguardandoEnter();
         }
+        aguardandoEnter();
     }
 
     private void listarLivros() {
@@ -277,118 +291,23 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
             write("═══════════════ LISTA DE LIVROS ═══════════════");
             livroService
                     .listarLivros()
-                    .forEach(l -> write(String.format("""
+                    .forEach(l -> {
+                        Estoque e = livroService.buscarEstoqueIdLivro(l.getId());
+                        write(String.format("""
                             Informacoes do livro:
                             Nome: %s
                             Sinopse: %s
                             Autor: %s
                             ISBN: %d
-                            Tipo: %s""", l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getTipo())));
-            aguardandoEnter();
-        } else {
-            write("ERROR: Nenhum livro no sistema encontrado.");
-            aguardandoEnter();
-        }
-    }
-
-    private void gerenciarCategoria(Funcionario funcionario) {
-        categoriaService.validacaoGerente(funcionario);
-
-        while (true) {
-            limparTela();
-            menuGerenciarCategoria();
-            int op = Integer.parseInt(reader(">"));
-
-            if (op == 1) cadastrarCategoria();
-            if (op == 2) removerCategoria();
-            if (op == 3) buscarCategoria();
-            if (op == 4) listarCategoria();
-            if (op == 0) break;
-        }
-    }
-
-    private void cadastrarCategoria() {
-        limparTela();
-        write("═══════════════ REGISTRAR CATEGORIA ═══════════════");
-        String tipo = reader("Tipo da categoria:");
-        String genero = reader("Generos:");
-
-        Integer idCategoria = categoriaService.registrarCategoria(tipo, genero);
-        Categoria c = categoriaService.buscarCategoria(idCategoria);
-
-        write(String.format("""
-                Informacoes da categoria:
-                ID: %d
-                Tipo: %s
-                Genero: %s
-                """, c.getId(), c.getTipo(), c.getGenero()));
-        aguardandoEnter();
-
-    }
-
-    private void removerCategoria() {
-        limparTela();
-        write("═══════════════ REMOVER CATEGORIA ═══════════════");
-        Integer idCategoria = Integer.parseInt(reader("Digite o ID da categoria:\n>"));
-        Categoria c = categoriaService.buscarCategoria(idCategoria);
-
-        write(String.format("""
-                Informacoes da categoria:
-                ID: %d
-                Tipo: %s
-                Genero: %s
-                """, c.getId(), c.getTipo(), c.getGenero()));
-
-        String confirmacao = reader("""
-                Deseja realmente excluir essa categoria?
-                AVISO: Ao confirmar, todos os dados desta categoria serao removidas.
-                >""").toUpperCase();
-
-        if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-            categoriaService.removerCategoria(idCategoria);
-            write("Operacao concluida.");
-            aguardandoEnter();
-        } else {
-            write("Operacao concelada.");
-            aguardandoEnter();
-        }
-    }
-
-    private void buscarCategoria() {
-        limparTela();
-        write("═══════════════ BUSCAR CATEGORIA ═══════════════");
-        String buscaCategoria = reader("Busque pelo: ID da categoria, nome do tipo ou genero\n>");
-
-        if (!categoriaService.listarCategoria().isEmpty()) {
-            categoriaService
-                    .listarCategoria()
-                    .stream()
-                    .filter( c -> Integer.parseInt(buscaCategoria) == c.getId()
-                            || c.getTipo().contains(buscaCategoria)
-                            || c.getGenero().contains(buscaCategoria))
-                    .forEach(c -> write(String.format("""
-                    Informacoes da categoria:
-                    ID: %d
-                    Tipo: %s
-                    Genero: %s
-                    """, c.getId(), c.getTipo(), c.getGenero())));
-            aguardandoEnter();
-        } else {
-            write("ERROR: Nenhuma categoria entrada.");
-            aguardandoEnter();
-        }
-    }
-
-    private void listarCategoria() {
-        if (!livroService.listarLivros().isEmpty()) {
-            write("═══════════════ LISTA DE CATEGORIAS ═══════════════");
-            categoriaService
-                    .listarCategoria()
-                    .forEach(c -> write(String.format("""
-                            Informacoes do livro:
-                            ID: %d
                             Tipo: %s
-                            Genero: %s""", c.getId(), c.getTipo(), c.getGenero())));
+                            
+                            Categoria: %d
+                            Estoque: %d
+                            Quantidade: %d
+                            ═══════════════════════════════════════════════""",
+                                l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(),
+                                l.getTipo(), e.getId(), e.getQuantidade()));
+                    });
             aguardandoEnter();
         } else {
             write("ERROR: Nenhum livro no sistema encontrado.");
@@ -396,93 +315,7 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
         }
     }
 
-    private void gerenciarEstoque(Funcionario funcionario) {
-        while (true) {
-            limparTela();
-            menuGerenciarEstoque();
-            int op = Integer.parseInt(reader(">"));
-
-            if (op == 1) registrarAbastecimentoEstoque(funcionario);
-            if (op == 2) registrarEmprestimoEstoque(funcionario);
-            if (op == 3) buscarRegistroEstoque();
-            if (op == 4) listarRegistrosEstoque();;
-            if (op == 0) break;
-        }
-    }
-
-    private void registrarAbastecimentoEstoque(Funcionario funcionario) {
-        limparTela();
-        write("═══════════════ REGISTRAR ABASTECIMENTO ═══════════════");
-        Integer idEstoque = Integer.parseInt(reader("ID estoque:"));
-        Integer quant = Integer.parseInt(reader("Quantidade do abastecimento:"));
-        String desc = reader("Descricao:");
-
-        estoqueService.registrarAbastecimento(idEstoque, funcionario.getId(), desc, quant);
-        aguardandoEnter();
-    }
-
-    private void registrarEmprestimoEstoque(Funcionario funcionario) {
-        limparTela();
-        write("═══════════════ REGISTRAR EMPRESTIMO ═══════════════");
-        int idEstoque = Integer.parseInt(reader("ID estoque:"));
-        int quant = Integer.parseInt(reader("Quantidade de livros:"));
-        String cpfCliente = reader("CPF do cliente:");
-
-        int diaEntrega = Integer.parseInt(reader("Dia para entrega (Somente numeros)\n>:"));
-        int mesEntrega = Integer.parseInt(reader("Mes para entrega (Somente numeros)\n>:"));
-
-        String desc = reader("Descricao:");
-
-        Cliente c = clienteService.buscarCliente(cpfCliente);
-        LocalDate entrega = LocalDate.of(diaEntrega, mesEntrega, Year.now().getValue());
-
-        estoqueService.registrarEmprestimo(idEstoque, funcionario.getId(), desc, c.getId(), entrega, quant);
-        aguardandoEnter();
-    }
-
-    private void buscarRegistroEstoque() {
-        limparTela();
-        write("═══════════════ BUSCA SIMPLES ═══════════════");
-        List<String> registers = new ArrayList<>();
-        int idRegistro = Integer.parseInt(reader("Busque pelo: ID do registro, funcionario ou cliente:\n>"));
-
-        for (Registros r : estoqueService.listarRegistros()) {
-            if (idRegistro == r.getId()
-                    || idRegistro == r.getId_funcionario()
-                    || idRegistro == r.getId_cliente()) {
-
-                String body = String.format("[%s] ID: %d | ESTOQUE: %d | FUNC: %d | TIPO: %s | CLIENTE: %s | ENTREGA: %s",
-                        r.getData(), r.getId(), r.getId_estoque(), r.getId_funcionario(),
-                        r.getTipo(), r.getId_cliente(), r.getDataEntrega());
-
-                registers.add((body));
-            }
-        }
-
-        if (!registers.isEmpty()) {
-            registers.forEach(System.out::println);
-            aguardandoEnter();
-        } else {
-            write("ERRO: Registro nao encontrado");
-            aguardandoEnter();
-        }
-    }
-
-    private void listarRegistrosEstoque() {
-        if (!estoqueService.listarRegistros().isEmpty()) {
-            write("═══════════════ LISTA DE REGISTROS ═══════════════");
-            estoqueService
-                    .listarRegistros()
-                    .forEach(r -> write(String.format("[%s] ID: %d | ESTOQUE: %d | FUNC: %d | TIPO: %s | CLIENTE: %s | ENTREGA: %s",
-                            r.getData(), r.getId(), r.getId_estoque(), r.getId_funcionario(),
-                            r.getTipo(), r.getId_cliente(), r.getDataEntrega())));
-            aguardandoEnter();
-        } else {
-            write("ERROR: Nenhum livro no sistema encontrado.");
-            aguardandoEnter();
-        }
-    }
-
+    // — > Menus de gerenciamento
     private void menuGerenciamentoLivro() {
         write("""
                 ╔════════════════════════════════════════╗
@@ -493,8 +326,7 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
                 ║   3 - Atualizar livro                  ║
                 ║   4 - Buscar livro                     ║
                 ║   5 - Listar livros                    ║
-                ║   6 - Gerenciar categoria              ║
-                ║   7 - Gerenciar estoque                ║
+                ║   6 - Gerenciar estoque                ║
                 ║   0 - Sair                             ║
                 ╚════════════════════════════════════════╝""");
     }
@@ -511,32 +343,7 @@ public record LivroUI(LivroService livroService, EstoqueService estoqueService, 
                 ╚════════════════════════════════════════╝""");
     }
 
-    private void menuGerenciarCategoria() {
-        write("""
-                ╔════════════════════════════════════════╗
-                ║         GERENCIAR CATEGORIAS           ║
-                ╠════════════════════════════════════════╣
-                ║   1 - Cadastrar nova categoria         ║
-                ║   2 - Remover categoria                ║         ║
-                ║   3 - Buscar categoria                 ║
-                ║   4 - Listar categorias                ║
-                ║   0 - Sair                             ║
-                ╚════════════════════════════════════════╝""");
-    }
-
-    private void menuGerenciarEstoque() {
-        write("""
-                ╔════════════════════════════════════════╗
-                ║          GERENCIAR ESTOQUE             ║
-                ╠════════════════════════════════════════╣
-                ║   1 - Registrar abastecimento          ║
-                ║   2 - Registrar emprestimo             ║
-                ║   3 - Buscar registro                  ║
-                ║   4 - Listar registros                 ║
-                ║   0 - Sair                             ║
-                ╚════════════════════════════════════════╝""");
-    }
-
+    // — > Utilitarios
     private void limparTela() {
         System.out.print("\033[H\033[2J");
         System.out.flush();

@@ -1,18 +1,21 @@
 package model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-public class Registros {
+public class Movimentacao {
     private Integer id;
-    private String descricao;
+    private Integer quant;
     private String tipo;
-    private LocalDate data;
+    private LocalDateTime data;
 
     private Integer id_estoque;
     private Integer id_funcionario;
 
-    private Integer id_cliente;
+    private Integer id_cliente = 1;
+    private LocalDate dataPrevista;
     private LocalDate dataEntrega;
+    private String status = "CONCLUIDO";
 
     public Integer getId() {
         return id;
@@ -38,12 +41,12 @@ public class Registros {
         this.id_funcionario = id_funcionario;
     }
 
-    public String getDescricao() {
-        return descricao;
+    public Integer getQuant() {
+        return quant;
     }
 
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
+    public void setQuant(Integer quant) {
+        this.quant = quant;
     }
 
     public String getTipo() {
@@ -54,11 +57,11 @@ public class Registros {
         this.tipo = tipo;
     }
 
-    public LocalDate getData() {
+    public LocalDateTime getData() {
         return data;
     }
 
-    public void setData(LocalDate data) {
+    public void setData(LocalDateTime data) {
         this.data = data;
     }
 
@@ -76,5 +79,21 @@ public class Registros {
 
     public void setDataEntrega(LocalDate dataEntrega) {
         this.dataEntrega = dataEntrega;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public LocalDate getDataPrevista() {
+        return dataPrevista;
+    }
+
+    public void setDataPrevista(LocalDate dataPrevista) {
+        this.dataPrevista = dataPrevista;
     }
 }

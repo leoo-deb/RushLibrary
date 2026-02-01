@@ -1,17 +1,16 @@
 package model;
 
-import exceptions.FormatoIncorretoException;
-
 import java.time.LocalDate;
-import java.util.Date;
 
 public class Funcionario {
     private Integer id;
     private String nome;
     private String cpf;
     private String email;
+    private String senha;
     private String cargo;
-    private LocalDate adimissao;
+    private LocalDate admissao;
+    private LocalDate ultimoAcesso;
 
     public Integer getId() {
         return id;
@@ -26,9 +25,6 @@ public class Funcionario {
     }
 
     public void setNome(String nome) {
-        if (nome.matches("[A-Za-z]\\s[A-Za-z]{3,45}")) {
-            throw new FormatoIncorretoException("Nome invalido.");
-        }
         this.nome = nome;
     }
 
@@ -37,9 +33,6 @@ public class Funcionario {
     }
 
     public void setCpf(String cpf) {
-        if (!cpf.matches("\\d{11,25}")) {
-            throw new FormatoIncorretoException("CPF invalido.");
-        }
         this.cpf = cpf;
     }
 
@@ -48,9 +41,6 @@ public class Funcionario {
     }
 
     public void setEmail(String email) {
-        if (email.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,6}")) {
-            throw new FormatoIncorretoException("Email invalido.");
-        }
         this.email = email;
     }
 
@@ -62,28 +52,27 @@ public class Funcionario {
         this.cargo = cargo;
     }
 
-    public LocalDate getAdimissao() {
-        return adimissao;
+    public LocalDate getAdmissao() {
+        return admissao;
     }
 
-    public void setAdimissao(LocalDate adimissao) {
-        this.adimissao = adimissao;
+    public void setAdmissao(LocalDate admissao) {
+        this.admissao = admissao;
     }
 
-    public enum Cargo {
-        GERENTE ("GERENTE"),
-        COMUM ("COMUM");
-
-        private final String cargo;
-
-        Cargo(String cargo) {
-            this.cargo = cargo;
-        }
-
-        @Override
-        public String toString() {
-            return cargo;
-        }
+    public String getSenha() {
+        return senha;
     }
 
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
+
+    public LocalDate getUltimoAcesso() {
+        return ultimoAcesso;
+    }
+
+    public void setUltimoAcesso(LocalDate ultimoAcesso) {
+        this.ultimoAcesso = ultimoAcesso;
+    }
 }

@@ -19,15 +19,15 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
     @Override
     public Integer insert(Contrato entity) {
         String sql = """
-                INSERT INTO Contrato (tipo_contrato, vigencia_contrato, vencimento_contrato, id_empresa)
+                INSERT INTO Contrato (tipo_contrato, status_contrato, vigencia_contrato, vencimento_contrato)
                 VALUES (?, ?, ?, ?)""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (var ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, entity.getTipo());
-            ps.setObject(2, entity.getVigencia());
-            ps.setObject(3, entity.getVencimento());
-            ps.setInt(4, entity.getId_empresa());
+            ps.setString(2, entity.getStatus());
+            ps.setObject(3, entity.getVigencia());
+            ps.setObject(4, entity.getVencimento());
             ps.executeUpdate();
 
             try (var rs = ps.getGeneratedKeys()) {
@@ -36,7 +36,6 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
         throw new NoSuchElementException("ERROR: Nao foi possivel recuperar ID.");
     }
 
@@ -44,12 +43,13 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
     public void update(Contrato entity) {
         String sql = """
                 UPDATE Contrato
-                SET vigencia_contrato = ?, vencimento_contrato = ?
+                SET vigencia_contrato = ?, vencimento_contrato = ?, status_contrato = ?
                 WHERE id_contrato = ?""";
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setObject(1, entity.getVigencia());
             ps.setObject(2, entity.getVencimento());
+            ps.setObject(3, entity.getStatus());
             ps.executeUpdate();
 
         } catch (SQLException e) {
@@ -63,7 +63,7 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
                 DELETE FROM Contrato
                 WHERE id_contrato = ?""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
             ps.setInt(1, integer);
             ps.executeUpdate();
 
@@ -79,7 +79,7 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
                 FROM Contrato
                 WHERE codigo_contrato = ?""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
             try (var rs = ps.executeQuery()) {
@@ -89,17 +89,17 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
 
                     c.setCodigo(rs.getInt(1));
                     c.setTipo(rs.getString(2));
-                    c.setVigencia(rs.getObject(3, LocalDate.class));
-                    c.setVencimento(rs.getObject(4, LocalDate.class));
-                    c.setId_empresa(rs.getInt(5));
+                    c.setStatus(rs.getString(3));
+                    c.setVigencia(rs.getObject(4, LocalDate.class));
+                    c.setVencimento(rs.getObject(5, LocalDate.class));
 
                     return Optional.of(c);
                 }
             }
+            return Optional.empty();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return Optional.empty();
 
     }
 
@@ -117,11 +117,10 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
                      contratos.add(resultSetContrato(rs));
                  }
              }
+             return contratos;
          } catch (SQLException e) {
              throw new RuntimeException(e);
          }
-
-         return contratos;
     }
 
     private Contrato resultSetContrato(ResultSet rs) throws SQLException {
@@ -129,9 +128,9 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
 
         c.setCodigo(rs.getInt(1));
         c.setTipo(rs.getString(2));
-        c.setVigencia(rs.getObject(3, LocalDate.class));
-        c.setVencimento(rs.getObject(4, LocalDate.class));
-        c.setId_empresa(rs.getInt(5));
+        c.setStatus(rs.getString(3));
+        c.setVigencia(rs.getObject(4, LocalDate.class));
+        c.setVencimento(rs.getObject(5, LocalDate.class));
 
         return c;
     }

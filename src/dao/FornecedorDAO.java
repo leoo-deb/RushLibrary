@@ -1,7 +1,6 @@
 package dao;
 
-import com.mysql.cj.jdbc.result.ResultSetImpl;
-import model.Empresa;
+import model.Fornecedor;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,19 +13,20 @@ import java.util.Optional;
 
 import static utils.ConnectFactory.getConnection;
 
-public class EmpresaDAO extends DAO<Empresa, Integer> {
+public class FornecedorDAO extends DAO<Fornecedor, Integer> {
 
     @Override
-    public Integer insert(Empresa entity) {
+    public Integer insert(Fornecedor entity) {
         String sql = """
-                INSERT INTO Empresa (nome_empresa, titular_empresa, cnpj_empresa)
-                VALUES (?, ?, ?)""";
+                INSERT INTO Fornecedor (id_fornc, titular_empresa, cnpj_empresa, codigo_contrato)
+                VALUES (?, ?, ?, ?)""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (var ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, entity.getNome());
             ps.setString(2, entity.getTitular());
             ps.setString(3, entity.getCnpj());
+            ps.setInt(4, entity.getCODIGO_CONTRATO());
             ps.executeUpdate();
 
             try (var rs = ps.getGeneratedKeys()) {
@@ -40,11 +40,11 @@ public class EmpresaDAO extends DAO<Empresa, Integer> {
     }
 
     @Override
-    public void update(Empresa entity) {
+    public void update(Fornecedor entity) {
         String sql = """
-                UPDATE Empresa
+                UPDATE Fornecedor
                 SET nome_empresa = ?, titular_empresa = ?, cnpj_empresa = ?
-                WHERE id_empresa = ?""";
+                WHERE id_fornc = ?""";
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -63,12 +63,13 @@ public class EmpresaDAO extends DAO<Empresa, Integer> {
     public void delete(Integer integer) {
         String sql = """
                 DELETE
-                FROM Empresa
-                WHERE id_empresa = ?""";
+                FROM Fornecedor
+                WHERE id_fornc = ?""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
+            ps.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -76,37 +77,39 @@ public class EmpresaDAO extends DAO<Empresa, Integer> {
     }
 
     @Override
-    public Optional<Empresa> findById(Integer integer) {
+    public Optional<Fornecedor> findById(Integer integer) {
         String sql = """
                 SELECT *
-                FROM Empresa
-                WHERE id_empresa = ?""";
+                FROM Fornecedor
+                WHERE id_fornc = ?""";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
             try (var rs = ps.executeQuery()) {
+
                 if (rs.next()) {
-                    Empresa empresa = new Empresa();
+                    Fornecedor fornecedor = new Fornecedor();
 
-                    empresa.setId(rs.getInt(1));
-                    empresa.setNome(rs.getString(2));
-                    empresa.setTitular(rs.getString(3));
-                    empresa.setCnpj(rs.getString(4));
+                    fornecedor.setId(rs.getInt(1));
+                    fornecedor.setNome(rs.getString(2));
+                    fornecedor.setTitular(rs.getString(3));
+                    fornecedor.setCnpj(rs.getString(4));
+                    fornecedor.setCODIGO_CONTRATO(rs.getInt(5));
 
-                    return Optional.of(empresa);
+                    return Optional.of(fornecedor);
                 }
             }
+            return Optional.empty();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return Optional.empty();
     }
 
-    public Optional<Empresa> findByName(String name) {
+    public Optional<Fornecedor> findByName(String name) {
         String sql = """
                 SELECT *
-                FROM Empresa
+                FROM Fornecedor
                 WHERE nome_empresa = ?""";
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
@@ -115,34 +118,35 @@ public class EmpresaDAO extends DAO<Empresa, Integer> {
             try (var rs = ps.executeQuery()) {
 
                 if (rs.next()) {
-                    Empresa empresa = new Empresa();
+                    Fornecedor fornecedor = new Fornecedor();
 
-                    empresa.setId(rs.getInt(1));
-                    empresa.setNome(rs.getString(2));
-                    empresa.setTitular(rs.getString(3));
-                    empresa.setCnpj(rs.getString(4));
+                    fornecedor.setId(rs.getInt(1));
+                    fornecedor.setNome(rs.getString(2));
+                    fornecedor.setTitular(rs.getString(3));
+                    fornecedor.setCnpj(rs.getString(4));
+                    fornecedor.setCODIGO_CONTRATO(rs.getInt(5));
 
-                    return Optional.of(empresa);
+                    return Optional.of(fornecedor);
                 }
             }
+            return Optional.empty();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return Optional.empty();
     }
 
     @Override
-    public List<Empresa> findAll() {
+    public List<Fornecedor> findAll() {
         String sql = """
                 SELECT *
-                FROM Empresa""";
-        List<Empresa> empresas = new ArrayList<>();
+                FROM Fornecedor""";
+        List<Fornecedor> empresas = new ArrayList<>();
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (var ps = getConnection().prepareStatement(sql)) {
 
             try (var rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    empresas.add(resultSetEmpresa(rs));
+                    empresas.add(resultSetForncedor(rs));
                 }
             }
         } catch (SQLException e) {
@@ -151,12 +155,15 @@ public class EmpresaDAO extends DAO<Empresa, Integer> {
         return empresas;
     }
 
-    private Empresa resultSetEmpresa(ResultSet rs) throws SQLException {
-        Empresa e = new Empresa();
-        e.setId(rs.getInt(1));
-        e.setNome(rs.getString(2));
-        e.setTitular(rs.getString(3));
-        e.setCnpj(rs.getString(4));
-        return e;
+    private Fornecedor resultSetForncedor(ResultSet rs) throws SQLException {
+        Fornecedor fornecedor = new Fornecedor();
+
+        fornecedor.setId(rs.getInt(1));
+        fornecedor.setNome(rs.getString(2));
+        fornecedor.setTitular(rs.getString(3));
+        fornecedor.setCnpj(rs.getString(4));
+        fornecedor.setCODIGO_CONTRATO(rs.getInt(5));
+
+        return fornecedor;
     }
 }

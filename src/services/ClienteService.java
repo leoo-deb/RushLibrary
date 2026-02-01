@@ -24,11 +24,29 @@ public class ClienteService {
             throw new FuncionarioExistenteException("Este CPF ja esta associado a um cliente.");
         }
 
+        if (!cpf.matches("[\\d(-.)?]{11,25}")) {
+            throw new FormatoIncorretoException("CPF invalido.");
+        }
+        String newCpf = cpf.replaceAll("\\D", "");
+
+        if (!nome.matches("[A-Za-z]{3,20}+\\s+[A-Za-z]{3,20}")) {
+            throw new FormatoIncorretoException("Nome invalido.");
+        }
+
+        if (!email.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}")) {
+            throw new FormatoIncorretoException("Email invalido.");
+        }
+
+        if (!numero.matches("[\\d.]{11,25}")) {
+            throw new FormatoIncorretoException("Numero invalido.");
+        }
+        String newNumero = numero.replaceAll("\\D", "");
+
         Cliente c = new Cliente();
         c.setNome(nome);
-        c.setCpf(cpf);
+        c.setCpf(newCpf);
         c.setEmail(email);
-        c.setNumero(numero);
+        c.setNumero(newNumero);
 
         return clienteDAO.insert(c);
     }
@@ -37,7 +55,6 @@ public class ClienteService {
         if (!cpf.matches("[\\d(-.)?]{11,25}")) {
             throw new FormatoIncorretoException("CPF invalido.");
         }
-
         String newCpf = cpf.replaceAll("\\D", "");
 
         return clienteDAO.findByCPF(newCpf)
@@ -45,28 +62,52 @@ public class ClienteService {
     }
 
     public Cliente buscarCliente(Integer id) {
-
         return clienteDAO.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Cliente nao encontrado."));
     }
 
-    public Cliente atualizarDados(String buscarCpf, String nome, String cpf, String email, String numero) {
+    public void atualizarDados(String buscarCpf, String nome, String email, String numero) {
         Cliente c = buscarCliente(buscarCpf);
 
-        if (!nome.isEmpty()) c.setNome(nome);
-        if (!cpf.isEmpty()) c.setCpf(cpf);
-        if (!email.isEmpty()) c.setEmail(email);
-        if (!numero.isEmpty()) c.setNumero(numero);
+        if (nome != null) {
+            if (!nome.matches("[A-Za-z]{3,20}+\\s+[A-Za-z]{3,20}")) {
+                throw new FormatoIncorretoException("Nome invalido.");
+            }
+
+            c.setNome(nome);
+        }
+        if (email != null) {
+            if (!email.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}")) {
+                throw new FormatoIncorretoException("Email invalido.");
+            }
+            c.setEmail(email);
+        }
+        if (numero != null) {
+            if (!numero.matches("[\\d.]{11,25}")) {
+                throw new FormatoIncorretoException("Numero invalido.");
+            }
+            String newNumero = numero.replaceAll("\\D", "");
+            c.setNumero(newNumero);
+        }
 
         clienteDAO.update(c);
-        return c;
     }
 
-    public void removerCliente(String cpf, Funcionario funcionario) {
+    public void removerCliente(String cpf) {
         if (!cpf.matches("\\d{11,25}")) throw new FormatoIncorretoException("CPF invalido.");
 
         buscarCliente(cpf);
         clienteDAO.deleteByCpf(cpf);
+    }
+
+    public List<Cliente> buscaFiltradaCliente(String busca) {
+        return clienteDAO
+                .findAll()
+                .stream()
+                .filter(c -> c.getNome().equals(busca)
+                        || c.getCpf().equals(busca)
+                        || c.getEmail().equals(busca))
+                .toList();
     }
 
     public List<Cliente> listaClientes() {

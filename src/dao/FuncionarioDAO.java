@@ -17,14 +17,18 @@ public class FuncionarioDAO extends DAO<Funcionario, Integer> {
 
     @Override
     public Integer insert(Funcionario entity) {
-        String sql = "INSERT INTO Funcionario (nome_func, cpf_func, email_func, cargo_func, dataadimissao_func) VALUES (?, ?, ?, ?, ?))";
+        String sql = """
+                INSERT INTO Funcionario (nome_func, cpf_func, email_func, senha_func, cargo_func, dataadimissao_func, ultimo_acesso_func)
+                VALUES (?, ?, ?, ?, ?, ?, ?)""";
         try (PreparedStatement ps = getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, entity.getNome());
             ps.setString(2, entity.getCpf());
             ps.setString(3, entity.getEmail());
-            ps.setObject(4, entity.getCargo());
-            ps.setObject(5, entity.getAdimissao());
+            ps.setString(4, entity.getSenha());
+            ps.setObject(5, entity.getCargo());
+            ps.setObject(6, entity.getAdmissao());
+            ps.setObject(7, entity.getUltimoAcesso());
             ps.executeUpdate();
 
             ResultSet rs = ps.getGeneratedKeys();
@@ -33,43 +37,70 @@ public class FuncionarioDAO extends DAO<Funcionario, Integer> {
         } catch (Exception e) {
             throw new RuntimeException("Nao foi possivel inserir o funcionario.", e);
         }
-
         throw new NoSuchElementException("Nao foi possivel recuperar ID.");
     }
 
     @Override
+    public void update(Funcionario entity) {
+        String sql = """
+                UPDATE Funcionario
+                SET nome_func = ?, email_func = ?, cargo_func = ?, senha_func = ?
+                WHERE id_func = ?""";
+
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+
+            ps.setString(1, entity.getNome());
+            ps.setString(2, entity.getEmail());
+            ps.setString(3, entity.getCargo());
+            ps.setInt(4, entity.getId());
+            ps.setString(5, entity.getSenha());
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Nao foi possivel realizar a atualizacao.", e);
+        }
+    }
+
+    @Override
+    public void delete(Integer id) {
+        String sql = """
+                DELETE FROM Funcionario
+                WHERE cpf_func = ?""";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Nao foi possivel realizar a remocao.", e);
+        }
+    }
+
+    public void deleteByCPF(String cpf) {
+        String sql = """
+                DELETE FROM Funcionario
+                WHERE cpf_func = ?""";
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+
+            ps.setString(1, cpf);
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Nao foi possivel realizar a remocao.", e);
+        }
+    }
+
+    @Override
     public Optional<Funcionario> findById(Integer integer) {
-        String sql = "SELECT * FROM Funcionario WHERE id_func = ?";
-        Funcionario funcionario = new Funcionario();
+        String sql = """
+                SELECT *
+                FROM Funcionario
+                WHERE id_func = ?""";
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
 
             ps.setInt(1, integer);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                funcionario.setId(rs.getInt(1));
-                funcionario.setNome(rs.getString(2));
-                funcionario.setCpf(rs.getString(3));
-                funcionario.setEmail(rs.getString(4));
-                funcionario.setCargo(rs.getString(5));
-                funcionario.setAdimissao(rs.getObject(6, LocalDate.class));
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException("Nao foi possivel encontrar o funcionario.", e);
-        }
-
-        return Optional.of(funcionario);
-    }
-
-    public Optional<Funcionario> findByCPF(String cpf) {
-        String sql = "SELECT * FROM Funcionario WHERE cpf_func = ?";
-
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
-
-            ps.setString(1, cpf);
-            try (ResultSet rs = ps.executeQuery()) {
+            try (var rs = ps.executeQuery()) {
 
                 if (rs.next()) {
                     Funcionario funcionario = new Funcionario();
@@ -78,8 +109,42 @@ public class FuncionarioDAO extends DAO<Funcionario, Integer> {
                     funcionario.setNome(rs.getString(2));
                     funcionario.setCpf(rs.getString(3));
                     funcionario.setEmail(rs.getString(4));
-                    funcionario.setCargo(rs.getString(5));
-                    funcionario.setAdimissao(rs.getObject(6, LocalDate.class));
+                    funcionario.setSenha(rs.getString(5));
+                    funcionario.setCargo(rs.getString(6));
+                    funcionario.setAdmissao(rs.getObject(7, LocalDate.class));
+                    funcionario.setUltimoAcesso(rs.getObject(8, LocalDate.class));
+
+                    return Optional.of(funcionario);
+                }
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            throw new RuntimeException("Nao foi possivel encontrar o funcionario.", e);
+        }
+    }
+
+    public Optional<Funcionario> findByCPF(String cpf) {
+        String sql = """
+                SELECT *
+                FROM Funcionario
+                WHERE cpf_func = ?""";
+
+        try (var ps = getConnection().prepareStatement(sql)) {
+
+            ps.setString(1, cpf);
+            try (var rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    Funcionario funcionario = new Funcionario();
+
+                    funcionario.setId(rs.getInt(1));
+                    funcionario.setNome(rs.getString(2));
+                    funcionario.setCpf(rs.getString(3));
+                    funcionario.setEmail(rs.getString(4));
+                    funcionario.setSenha(rs.getString(5));
+                    funcionario.setCargo(rs.getString(6));
+                    funcionario.setAdmissao(rs.getObject(7, LocalDate.class));
+                    funcionario.setUltimoAcesso(rs.getObject(8, LocalDate.class));
 
                     return Optional.of(funcionario);
                 }
@@ -92,7 +157,9 @@ public class FuncionarioDAO extends DAO<Funcionario, Integer> {
 
     @Override
     public List<Funcionario> findAll() {
-        String sql = "SELECT * FROM Funcionario";
+        String sql = """
+                SELECT *
+                FROM Funcionario""";
         List<Funcionario> funcionarios = new ArrayList<>();
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
@@ -102,65 +169,24 @@ public class FuncionarioDAO extends DAO<Funcionario, Integer> {
                 funcionarios.add(resultSetFuncionario(rs));
             }
 
+            return funcionarios;
         } catch (SQLException e) {
             throw new RuntimeException("Nao foi possivel criar a lista.", e);
         }
-        return funcionarios;
     }
 
     private Funcionario resultSetFuncionario(ResultSet rs) throws SQLException {
         Funcionario funcionario = new Funcionario();
-            funcionario.setId(rs.getInt(1));
-            funcionario.setNome(rs.getString(2));
-            funcionario.setCpf(rs.getString(3));
-            funcionario.setEmail(rs.getString(4));
-            funcionario.setCargo(rs.getString(5));
-            funcionario.setAdimissao(rs.getObject(6, LocalDate.class));
+
+        funcionario.setId(rs.getInt(1));
+        funcionario.setNome(rs.getString(2));
+        funcionario.setCpf(rs.getString(3));
+        funcionario.setEmail(rs.getString(4));
+        funcionario.setSenha(rs.getString(5));
+        funcionario.setCargo(rs.getString(6));
+        funcionario.setAdmissao(rs.getObject(7, LocalDate.class));
+        funcionario.setUltimoAcesso(rs.getObject(8, LocalDate.class));
+
         return funcionario;
-    }
-
-    @Override
-    public void delete(Integer id) {
-        String sql = "DELETE FROM Funcionario WHERE cpf_func = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
-            Funcionario funcionario = new Funcionario();
-
-            ps.setInt(1, id);
-            ps.executeUpdate();
-
-        } catch (Exception e) {
-            throw new RuntimeException("Nao foi possivel realizar a remocao.", e);
-        }
-    }
-
-    public void deleteByCPF(String cpf) {
-        String sql = "DELETE FROM Funcionario WHERE cpf_func = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
-            Funcionario funcionario = new Funcionario();
-
-            ps.setString(1, cpf);
-            ps.executeUpdate();
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Nao foi possivel realizar a remocao.", e);
-        }
-    }
-
-    @Override
-    public void update(Funcionario entity) {
-        String sql = """
-                UPDATE Funcionario
-                SET nome_func = ?, email_func = ?, cargo_func = ?
-                WHERE id_func = ?""";
-
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
-            ps.setString(1, entity.getNome());
-            ps.setString(2, entity.getEmail());
-            ps.setObject(3, entity.getCargo());
-            ps.executeUpdate();
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Nao foi possivel realizar a atualizacao.", e);
-        }
     }
 }

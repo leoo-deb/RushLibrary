@@ -4,6 +4,8 @@ import model.Funcionario;
 import services.FuncionarioService;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+
 import static io.Input.reader;
 import static io.Output.write;
 
@@ -18,20 +20,22 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
             int op = Integer.parseInt(reader(">"));
 
             if (op == 1) cadastrarFucnionario();
-            if (op == 2) removerFuncionario();
-            if (op == 3) atualizarFuncionario();
+            if (op == 2) removerFuncionario(funcionario);
+            if (op == 3) atualizarFuncionario(funcionario);
             if (op == 4) buscarFuncionario();
             if (op == 5) listarFuncionario();
             if (op == 0) break;
         }
     }
 
+    // — > CRUD dos funcionarios
     private void cadastrarFucnionario() {
         limparTela();
         write("═══════════════ CADASTRO DE FUNCIONARIO ═══════════════");
         String nome = reader("Nome:");
         String cpf = reader("CPF:");
         String email = reader("Email:");
+        String senha = reader("A senha deve conter 6 digitos numericos:\n>");
         String cargo;
         while (true) {
             write("""
@@ -53,7 +57,7 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
         String dataAdmissao = reader("Data de admissao (DIA/MES/ANO)\n>");
         LocalDate data = LocalDate.parse(dataAdmissao, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
-        Integer idFuncionario = funcionarioService.cadastrarFuncionario(nome, cpf, email, cargo, data);
+        Integer idFuncionario = funcionarioService.cadastrarFuncionario(nome, cpf, email, senha, cargo, data);
         limparTela();
 
         write("═══════════════ FUNCIONARIO CADASTRADO ═══════════════");
@@ -65,33 +69,33 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
                 Email: %s
                 Cargo: %s
                 Data de admissao: %s""", idFuncionario, nome, cpf, email, cargo, data));
-
         aguardandoEnter();
     }
 
-    private void removerFuncionario() {
+    private void removerFuncionario(Funcionario funcionario) {
         limparTela();
         write("═══════════════ REMOCAO DE FUNCIONARIO ═══════════════");
         String cpfFuncionario = reader("CPF do funcionario:");
         Funcionario f = funcionarioService.buscarFuncionario(cpfFuncionario);
 
         write(String.format("""
+                ═══════════════════════════════════════════════════════
                 Informacoes do funcionario:
                 ID: %d
                 Nome: %s
                 CPF: %s
                 Email: %s
                 Cargo: %s
-                Data de admissao: %s
-                Data de admissao: %s""", cpfFuncionario, f.getNome(), f.getCpf(), f.getEmail(), f.getCargo(), f.getAdimissao()));
+                Data de admissao: %s""", f.getId(), f.getNome(), f.getCpf(), f.getEmail(), f.getCargo(), f.getAdmissao()));
 
         String confirmacao = reader("""
+                ═══════════════════════════════════════════════════════
                 Deseja realmente remover esse funcionario?
                 WARN: Ao confirmar, todos os dados deste funcionario serao apagados.
                 >""").toUpperCase();
 
         if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-            funcionarioService.removerFuncionario(cpfFuncionario);
+            funcionarioService.removerFuncionario(funcionario, cpfFuncionario);
             write("SUCCESS: Operacao concluida.");
             aguardandoEnter();
         } else {
@@ -100,7 +104,7 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
         }
     }
 
-    private void atualizarFuncionario() {
+    private void atualizarFuncionario(Funcionario funcionario) {
         while (true) {
             limparTela();
             menuAtualizarFuncionario();
@@ -120,7 +124,7 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
                 String confirmacao = reader("Deseja realmente atualizar o nome?\n>").toUpperCase();
 
                 if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    funcionarioService.atualizarDados(cpf, novoNome, null);
+                    funcionarioService.atualizarDados(f, novoNome, null, null);
                     write("SUCCESS: Operacao cocnluida.");
                     aguardandoEnter();
                 } else {
@@ -143,7 +147,7 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
                 String confirmacao = reader("Deseja realmente atualizar o email?\n>").toUpperCase();
 
                 if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    funcionarioService.atualizarDados(cpf, null, novoEmail);
+                    funcionarioService.atualizarDados(f, null, novoEmail, null);
                     write("SUCCESS: Operacao cocnluida.");
                     aguardandoEnter();
                 } else {
@@ -153,18 +157,42 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
             }
 
             if (op == 3) {
+                write("═══════════════ ATUALIZAR SENHA ═══════════════");
+                String cpf = reader("CPF do funcionario:");
+                Funcionario f = funcionarioService.buscarFuncionario(cpf);
+
+                write(String.format("""
+                        ID: %d
+                        Nome: %s
+                        Email: %s""", f.getId(), f.getNome(), f.getEmail()));
+
+                String novaSenha = reader("Nova senha:");
+                String confirmacao = reader("Deseja realmente atualizar o email?\n>").toUpperCase();
+
+                if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
+                    funcionarioService.atualizarDados(funcionario, null, null, novaSenha);
+                    write("SUCCESS: Operacao cocnluida.");
+                    aguardandoEnter();
+                } else {
+                    write("INFO: Operacao cancelada.");
+                    aguardandoEnter();
+                }
+            }
+
+            if (op == 4) {
                 write("═══════════════ PROMOVER FUNCIONARIO ═══════════════");
                 String cpf = reader("CPF do funcionario:");
                 Funcionario f = funcionarioService.buscarFuncionario(cpf);
                 String novoCargo;
 
                 write(String.format("""
-                        ID: %d
                         Nome: %s
-                        Cargo atual: %s""", f.getId(), f.getNome(), f.getCargo()));
+                        Cargo atual: %s
+                        Data de admissao: %s""", f.getNome(), f.getCargo(), f.getAdmissao()));
 
                 while (true) {
                     write("""
+                            ═════════════════════════════════════════════════════════
                             Selecione o cargo para promocao:
                             [1] Gerente
                             [2] Comum""");
@@ -182,10 +210,10 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
                     write("ERROR: Dado invalido.");
                 }
 
-                    String confirmacao = reader("Deseja realmente atualizar o email?\n>").toUpperCase();
+                    String confirmacao = reader("Deseja realmente promover este funcionario?\n>").toUpperCase();
 
                     if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                        funcionarioService.realizarPromocao(cpf, novoCargo);
+                        funcionarioService.realizarPromocao(funcionario, cpf, novoCargo);
                         write("SUCCESS: Operacao cocnluida.");
                     } else {
                         write("INFO: Operacao cancelada.");
@@ -200,22 +228,21 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
     private void buscarFuncionario() {
         limparTela();
         write("═══════════════ BUSCAR FUNCIONARIO ═══════════════");
-        String busca = reader("Busque por: id, nome, cpf ou email do funcionario\n");
+        String busca = reader("Busque pelo: nome, cpf ou email do funcionario\n>");
+        List<Funcionario> resultado = funcionarioService.buscaFiltradaFuncionario(busca);
 
-        funcionarioService
-                .listarFuncionario()
-                .stream()
-                .filter(f -> f.getId() == Integer.parseInt(busca)
-                        || f.getNome().contains(busca)
-                        || f.getCpf().contains(busca)
-                        || f.getEmail().contains(busca))
-                .forEach(f -> write(String.format("""
+        if (!resultado.isEmpty()) {
+            resultado
+                    .forEach(f -> write(String.format("""
                         ID: %d
                         Nome: %s
                         CPF: %s
                         Email: %s
                         Cargo atual: %s
-                        Data de admissao: %s""",f.getId(), f.getNome(), f.getCpf(), f.getEmail(), f.getCargo(), f.getAdimissao())));
+                        Data de admissao: %s""",f.getId(), f.getNome(), f.getCpf(), f.getEmail(), f.getCargo(), f.getAdmissao())));
+        } else {
+            write("ERROR: Funcionario nao entrado");
+        }
         aguardandoEnter();
     }
 
@@ -231,10 +258,13 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
                         CPF: %s
                         Email: %s
                         Cargo atual: %s
-                        Data de admissao: %s""",f.getId(), f.getNome(), f.getCpf(), f.getEmail(), f.getCargo(), f.getAdimissao())));
+                        Data de admissao: %s
+                        ══════════════════════════════════════════════════════""",f.getId(), f.getNome(), f.getCpf(),
+                        f.getEmail(), f.getCargo(), f.getAdmissao())));
         aguardandoEnter();
     }
 
+    // — > Cabecarios de gerenciamento
     private void menuGerenciarFuncionario() {
         write("""
                      ╔════════════════════════════════════════╗
@@ -256,11 +286,13 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
                      ╠════════════════════════════════════════╣
                      ║   1 - Atualizar nome                   ║
                      ║   2 - Atualizar email                  ║
-                     ║   3 - Promover funcionario             ║
+                     ║   3 - Atualizar senha                  ║
+                     ║   4 - Promover funcionario             ║
                      ║   0 - Sair                             ║
                      ╚════════════════════════════════════════╝""");
     }
 
+    // — > Utilitarios
     private void limparTela() {
         System.out.print("\033[H\033[2J");
         System.out.flush();

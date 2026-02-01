@@ -7,9 +7,9 @@ import java.time.LocalDate;
 public class Contrato {
     private Integer codigo;
     private String tipo;
+    private String status;
     private LocalDate vigencia;
     private LocalDate vencimento;
-    private Integer id_empresa;
 
     public Integer getCodigo() {
         return codigo;
@@ -43,11 +43,11 @@ public class Contrato {
         this.vencimento = vencimento;
     }
 
-    public Integer getId_empresa() {
-        return id_empresa;
+    public String getStatus() {
+        return status;
     }
 
-    public void setId_empresa(Integer id_empresa) {
-        this.id_empresa = id_empresa;
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
