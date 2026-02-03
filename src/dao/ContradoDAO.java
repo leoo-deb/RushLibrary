@@ -44,12 +44,13 @@ public class ContradoDAO extends DAO<Contrato, Integer> {
         String sql = """
                 UPDATE Contrato
                 SET vigencia_contrato = ?, vencimento_contrato = ?, status_contrato = ?
-                WHERE id_contrato = ?""";
+                WHERE codigo_contrato = ?""";
 
         try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
             ps.setObject(1, entity.getVigencia());
             ps.setObject(2, entity.getVencimento());
             ps.setObject(3, entity.getStatus());
+            ps.setObject(4, entity.getCodigo());
             ps.executeUpdate();
 
         } catch (SQLException e) {

@@ -10,6 +10,7 @@ public class ConsoleUI {
     private final LivroUI livroUI;
     private final FuncionarioUI funcionarioUI;
     private final ClienteUI clienteUI;
+    private final FornecedorUI fornecedorUI;
 
     private Funcionario funcionario;
 
@@ -22,6 +23,7 @@ public class ConsoleUI {
         this.livroUI = new LivroUI(livroService, clienteService, fornecedorService);
         this.funcionarioUI = new FuncionarioUI(funcionarioService);
         this.clienteUI = new ClienteUI(clienteService);
+        this.fornecedorUI = new FornecedorUI(fornecedorService);
     }
 
     public void executar() {
@@ -35,34 +37,57 @@ public class ConsoleUI {
                      ║   2 - Sair                             ║
                      ╚════════════════════════════════════════╝""");
 
-             int op = Integer.parseInt(reader(">"));
+             try {
+                 int op = Integer.parseInt(reader(">"));
 
-             if (op == 1) realizarLogin();
-             if (op == 2) break;
-             if (op > 2 || op < 1) write("Opcao incorreta.");
+                 if (op == 1) realizarLogin();
+                 if (op == 2) break;
+             } catch (NumberFormatException e) {
+                 write("ERROR: digito incorreto.");
+             }
          }
      }
 
-     private void realizarLogin() {
-         FuncionarioService funcionarioService = new FuncionarioService();
-         limparTela();
-         write("═══════════════ LOGIN ═══════════════");
-         String cpf = reader("CPF:");
-         String senha = reader("Senha:");
+    private void realizarLogin() {
+        limparTela();
+        write("═══════════════ LOGIN ═══════════════");
+        String cpf = reader("CPF:");
+        String senha = reader("Senha:");
 
-         funcionario = funcionarioService.buscarFuncionario(cpf);
-         if (!funcionario.getSenha().equals(senha)) {
-             write("Senha incorreta.");
-             return;
-         }
+        try {
+            FuncionarioService funcionarioService = new FuncionarioService();
+            funcionario = funcionarioService.buscarFuncionario(cpf);
+            if (!funcionario.getSenha().equals(senha)) {
+                write("Senha incorreta.");
+                return;
+            }
 
-         menuLivraria();
-     }
+            menuLivraria();
+        } catch (Exception e) {
+            write("ERROR: " + e.getMessage());
+        }
+    }
 
-     private void menuLivraria() {
-         while (true) {
-             limparTela();
-             write("""
+    private void menuLivraria() {
+        while (true) {
+            limparTela();
+            menu();
+            try {
+                int op = Integer.parseInt(reader(">"));
+
+                if (op == 1) livroUI.gerenciarLivro(funcionario);
+                if (op == 2) funcionarioUI.gerenciarFuncionario(funcionario);
+                if (op == 3) clienteUI.gerenciarCliente(funcionario);
+                if (op == 4) fornecedorUI.gerenciarFornecedor(funcionario);
+                if (op == 0) break;
+            } catch (NumberFormatException e) {
+                write("Digito incorreto.");
+            }
+        }
+    }
+
+    private void menu() {
+        write("""
                      ╔════════════════════════════════════════╗
                      ║            MENU LIVRARIA               ║
                      ╠════════════════════════════════════════╣
@@ -72,14 +97,7 @@ public class ConsoleUI {
                      ║   4 - Gerenciar empresas               ║
                      ║   0 - Sair                             ║
                      ╚════════════════════════════════════════╝""");
-             int op = Integer.parseInt(reader(">"));
-
-             if (op == 1) livroUI.gerenciarLivro(funcionario);
-             if (op == 2) funcionarioUI.gerenciarFuncionario(funcionario);
-             if (op == 3) clienteUI.gerenciarCliente(funcionario);
-             if (op == 0) break;
-         }
-     }
+    }
 
     private void limparTela() {
         System.out.print("\033[H\033[2J");

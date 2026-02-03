@@ -4,11 +4,8 @@ import dao.ClienteDAO;
 import exceptions.AcessoNegadoException;
 import exceptions.FormatoIncorretoException;
 import exceptions.FuncionarioExistenteException;
-import exceptions.FuncionarioInexistenteException;
 import model.Cliente;
 import model.Funcionario;
-
-import javax.sql.rowset.serial.SerialStruct;
 import java.util.List;
 import java.util.NoSuchElementException;
 

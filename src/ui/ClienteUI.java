@@ -13,14 +13,18 @@ public record ClienteUI(ClienteService clienteService) {
         while (true) {
             limparTela();
             menuGerenciamentoCliente();
-            int op = Integer.parseInt(reader(">"));
+            try {
+                int op = Integer.parseInt(reader(">"));
 
-            if (op == 1) cadastrarCliente();
-            if (op == 2) removerCliente(funcionario);
-            if (op == 3) atualizarCliente();
-            if (op == 4) buscarCliente();
-            if (op == 5) listarCliente();
-            if (op == 0) break;
+                if (op == 1) cadastrarCliente();
+                if (op == 2) removerCliente(funcionario);
+                if (op == 3) atualizarCliente();
+                if (op == 4) buscarCliente();
+                if (op == 5) listarCliente();
+                if (op == 0) break;
+            } catch (NumberFormatException e) {
+                write("ERROR: Digito incorreto.");
+            }
         }
     }
 
@@ -33,17 +37,21 @@ public record ClienteUI(ClienteService clienteService) {
         String email = reader("Email:");
         String numero = reader("Numero:");
 
-        Integer idCliente = clienteService.cadastrarCliente(nome, cpf, email, numero);
-        limparTela();
+        try {
+            Integer idCliente = clienteService.cadastrarCliente(nome, cpf, email, numero);
+            limparTela();
 
-        write("═══════════════ CADASTRO CONCLUIDO ═══════════════");
-        Cliente c = clienteService.buscarCliente(idCliente);
-        write(String.format("""
-                Informacoes cadastrais:
-                Nome: %s
-                CPF: %s
-                Email: %s
-                Numero de contato: %s""", c.getNome(), c.getCpf(), c.getEmail(), c.getNumero()));
+            write("═══════════════ CADASTRO CONCLUIDO ═══════════════");
+            Cliente c = clienteService.buscarCliente(idCliente);
+            write(String.format("""
+                    Informacoes cadastrais:
+                    Nome: %s
+                    CPF: %s
+                    Email: %s
+                    Numero de contato: %s""", c.getNome(), c.getCpf(), c.getEmail(), c.getNumero()));
+        } catch (Exception e) {
+            write("ERROR: " + e.getMessage());
+        }
         aguardandoEnter();
     }
 
@@ -53,28 +61,32 @@ public record ClienteUI(ClienteService clienteService) {
         limparTela();
         write("═══════════════ REMOCAO DE CLIENTE ═══════════════");
         String cpf = reader("Digite o CPF do cliente:\n>");
-        Cliente c = clienteService.buscarCliente(cpf);
+        try {
+            Cliente c = clienteService.buscarCliente(cpf);
 
-        write(String.format("""
-                Informacoes do cliente:
-                ID: %d
-                Nome: %s
-                CPF: %s
-                Email: %s
-                Numero de contato: %s""", c.getId(), c.getNome(), c.getCpf(),
-                c.getEmail(), c.getNumero()));
+            write(String.format("""
+                            Informacoes do cliente:
+                            ID: %d
+                            Nome: %s
+                            CPF: %s
+                            Email: %s
+                            Numero de contato: %s""", c.getId(), c.getNome(), c.getCpf(),
+                    c.getEmail(), c.getNumero()));
 
-        String confirmacao = reader("""
-                ═════════════════════════════════════════════════════
-                Deseja realmente remover esse cliente?
-                WARN: Ao confirmar, todos os dados deste cliente serao apagados.
-                >""").toUpperCase();
+            String confirmacao = reader("""
+                    ═════════════════════════════════════════════════════
+                    Deseja realmente remover esse cliente?
+                    WARN: Ao confirmar, todos os dados deste cliente serao apagados.
+                    >""").toUpperCase();
 
-        if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-            clienteService.removerCliente(cpf);
-            write("SUCCESS: Operacao concluida.");
-        } else {
-            write("ERROR; Operacao cancelada.");
+            if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
+                clienteService.removerCliente(cpf);
+                write("SUCCESS: Operacao concluida.");
+            } else {
+                write("ERROR; Operacao cancelada.");
+            }
+        } catch (Exception e) {
+            write("ERROR: " + e.getMessage());
         }
         aguardandoEnter();
     }
@@ -83,87 +95,104 @@ public record ClienteUI(ClienteService clienteService) {
         while (true) {
             limparTela();
             menuAtualizacaoCliente();
-            int op = Integer.parseInt(reader(">"));
 
-            if (op == 1) {
-                limparTela();
-                write("═══════════════ ATUALIZAR NOME ═══════════════");
-                String cpf = reader("Digite o CPF do cliente:\n>");
-                Cliente c = clienteService.buscarCliente(cpf);
+            try {
+                int op = Integer.parseInt(reader(">"));
 
-                write(String.format("""
-                Informacoes do cliente:
-                Nome Atual: %s
-                CPF: %s""", c.getNome(), c.getCpf()));
-                String novoNome = reader("Digite o novo numero:");
+                if (op == 1) {
+                    limparTela();
+                    write("═══════════════ ATUALIZAR NOME ═══════════════");
+                    String cpf = reader("Digite o CPF do cliente:\n>");
+                    try {
+                        Cliente c = clienteService.buscarCliente(cpf);
+                        write(String.format("""
+                                Informacoes do cliente:
+                                Nome Atual: %s
+                                CPF: %s
+                                ═════════════════════════════════════════════════════""",
+                                c.getNome(), c.getCpf()));
+                        String novoNome = reader("Digite o novo numero:");
 
-                String confirmacao = reader("""
-                ═════════════════════════════════════════════════════
-                Deseja realmente atualizar esse cliente?
-                >""").toUpperCase();
+                        String confirmacao = reader("""
+                                Deseja realmente atualizar esse cliente?
+                                >""").toUpperCase();
 
-                if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    clienteService.atualizarDados(cpf, novoNome, null, null);
-                    write("SUCCESS: Operacao concluida.");
-                } else {
-                    write("ERROR; Operacao cancelada.");
+                        if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
+                            clienteService.atualizarDados(cpf, novoNome, null, null);
+                            write("SUCCESS: Operacao concluida.");
+                        } else {
+                            write("ERROR; Operacao cancelada.");
+                        }
+                    } catch (RuntimeException e) {
+                        write("ERROR: " + e.getMessage());
+                    }
+                    aguardandoEnter();
                 }
-                aguardandoEnter();
-            }
 
-            if (op == 2) {
-                limparTela();
-                write("═══════════════ ATUALIZAR EMAIL ═══════════════");
-                String cpf = reader("Digite o CPF do cliente:\n>");
-                Cliente c = clienteService.buscarCliente(cpf);
+                if (op == 2) {
+                    limparTela();
+                    write("═══════════════ ATUALIZAR EMAIL ═══════════════");
+                    String cpf = reader("Digite o CPF do cliente:\n>");
+                    try {
+                        Cliente c = clienteService.buscarCliente(cpf);
+                        write(String.format("""
+                                Informacoes do cliente:
+                                Nome: %s
+                                Email atual: %s
+                                ══════════════════════════════════════════════════════""",
+                                c.getNome(), c.getEmail()));
+                        String novoEmail = reader("Digite o novo email:");
 
-                write(String.format("""
-                Informacoes do cliente:
-                Nome: %s
-                Email atual: %s""", c.getNome(), c.getEmail()));
-                String novoEmail = reader("Digite o novo email:");
+                        String confirmacao = reader("""
+                                Deseja realmente atualizar esse cliente?
+                                >""").toUpperCase();
 
-                String confirmacao = reader("""
-                ══════════════════════════════════════════════════════
-                Deseja realmente atualizar esse cliente?
-                >""").toUpperCase();
-
-                if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    clienteService.atualizarDados(cpf, null, novoEmail, null);
-                    write("SUCCESS: Operacao concluida.");
-                } else {
-                    write("ERROR; Operacao cancelada.");
+                        if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
+                            clienteService.atualizarDados(cpf, null, novoEmail, null);
+                            write("SUCCESS: Operacao concluida.");
+                        } else {
+                            write("ERROR; Operacao cancelada.");
+                        }
+                    } catch (Exception e) {
+                        write("ERROR: " + e.getMessage());
+                    }
+                    aguardandoEnter();
                 }
-                aguardandoEnter();
-            }
 
-            if (op == 3) {
-                limparTela();
-                write("═══════════════ ATUALIZAR NUMERO ═══════════════");
-                String cpf = reader("Digite o CPF do cliente:\n>");
-                Cliente c = clienteService.buscarCliente(cpf);
+                if (op == 3) {
+                    limparTela();
+                    write("═══════════════ ATUALIZAR NUMERO ═══════════════");
+                    String cpf = reader("Digite o CPF do cliente:\n>");
+                    try {
+                        Cliente c = clienteService.buscarCliente(cpf);
+                        write(String.format("""
+                                Informacoes do cliente:
+                                Nome Atual: %s
+                                Numero atual: %s
+                                ═════════════════════════════════════════════════════""",
+                                c.getNome(), c.getNumero()));
+                        String novoNumero = reader("Digite o novo numero:");
 
-                write(String.format("""
-                Informacoes do cliente:
-                Nome Atual: %s
-                Numero atual: %s""", c.getNome(), c.getNumero()));
-                String novoNumero = reader("Digite o novo numero:");
+                        String confirmacao = reader("""
+                                Deseja realmente atualizar esse cliente?
+                                >""").toUpperCase();
 
-                String confirmacao = reader("""
-                ═════════════════════════════════════════════════════
-                Deseja realmente atualizar esse cliente?
-                >""").toUpperCase();
-
-                if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    clienteService.atualizarDados(cpf, null, null, novoNumero);
-                    write("SUCCESS: Operacao concluida.");
-                } else {
-                    write("ERROR; Operacao cancelada.");
+                        if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
+                            clienteService.atualizarDados(cpf, null, null, novoNumero);
+                            write("SUCCESS: Operacao concluida.");
+                        } else {
+                            write("ERROR; Operacao cancelada.");
+                        }
+                    } catch (RuntimeException e) {
+                        write("ERRO: " + e.getMessage());
+                    }
+                    aguardandoEnter();
                 }
-                aguardandoEnter();
-            }
 
-            if (op == 0) break;
+                if (op == 0) break;
+            } catch (NumberFormatException e) {
+                write("ERROR: Digito invalido.");
+            }
         }
     }
 
@@ -171,21 +200,24 @@ public record ClienteUI(ClienteService clienteService) {
         limparTela();
         write("═══════════════ BUSCA DE CLIENTE ═══════════════");
         String busca = reader("Busque pelo: nome, cpf ou email");
-        List<Cliente> resultado = clienteService.buscaFiltradaCliente(busca);
-
-        if (!resultado.isEmpty()) {
-            resultado
-                    .forEach(c -> write(String.format("""
-                            ═════════════════════════════════════════════════
-                            ID: %d
-                            Nome: %s
-                            CPF: %s
-                            Email: %s
-                            Numero: %s
-                            Quant. livro: %d""",
-                            c.getId(), c.getNome(), c.getCpf(), c.getEmail(), c.getNumero(), c.getQuantidadeLivro())));
-        } else {
-            write("ERROR: Nenhum cliente encontrado.");
+        try {
+            List<Cliente> resultado = clienteService.buscaFiltradaCliente(busca);
+            if (!resultado.isEmpty()) {
+                resultado
+                        .forEach(c -> write(String.format("""
+                                        ═════════════════════════════════════════════════
+                                        ID: %d
+                                        Nome: %s
+                                        CPF: %s
+                                        Email: %s
+                                        Numero: %s
+                                        Quant. livro: %d""",
+                                c.getId(), c.getNome(), c.getCpf(), c.getEmail(), c.getNumero(), c.getQuantidadeLivro())));
+            } else {
+                write("ERROR: Nenhum cliente encontrado.");
+            }
+        } catch (Exception e) {
+            write("ERROR: " + e.getMessage());
         }
         aguardandoEnter();
     }
@@ -193,11 +225,11 @@ public record ClienteUI(ClienteService clienteService) {
     private void listarCliente() {
         limparTela();
         write("═══════════════ LISTA DE CLIENTES ═══════════════");
-
-        if (!clienteService.listaClientes().isEmpty()) {
-            clienteService
-                    .listaClientes()
-                    .forEach(c -> write(String.format("""
+        try {
+            if (!clienteService.listaClientes().isEmpty()) {
+                clienteService
+                        .listaClientes()
+                        .forEach(c -> write(String.format("""
                                     ID: %d
                                     Nome: %s
                                     CPF: %s
@@ -206,8 +238,11 @@ public record ClienteUI(ClienteService clienteService) {
                                     Quant. livros: %d
                                     ═════════════════════════════════════════════════""",
                             c.getId(), c.getNome(), c.getCpf(), c.getEmail(), c.getNumero(), c.getQuantidadeLivro())));
-        } else {
-            write("ERROR: Nenhum cliente cadastrado.");
+            } else {
+                write("ERROR: Nenhum cliente cadastrado.");
+            }
+        } catch (Exception e) {
+            write("ERROR: " + e.getMessage());
         }
         aguardandoEnter();
     }

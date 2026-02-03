@@ -9,8 +9,6 @@ import model.Contrato;
 import model.Fornecedor;
 import model.Funcionario;
 
-import javax.xml.transform.sax.SAXResult;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
@@ -48,7 +46,7 @@ public class FornecedorService {
             throw new IllegalArgumentException("Nao e possivel por vencimentos passados.");
         }
 
-        try (Connection conn = getConnection()) {
+        try (var conn = getConnection()) {
             conn.setAutoCommit(false);
 
             try {
@@ -56,6 +54,7 @@ public class FornecedorService {
                 c.setTipo(tipoContrato);
                 c.setVigencia(vigencia);
                 c.setVencimento(vencimento);
+                c.setStatus("VIGENTE");
                 Integer idContrato = contradoDAO.insert(c);
 
                 Fornecedor e = new Fornecedor();
@@ -80,16 +79,21 @@ public class FornecedorService {
             throw new IllegalArgumentException("Nao e possivel por vencimentos passados.");
         }
 
-        Contrato c = contradoDAO.findById(fornecedor.getCODIGO_CONTRATO()).orElseThrow();
-        c.setVencimento(vencimento);
+        Contrato contrato = buscarContrato(fornecedor);
 
-        contradoDAO.update(c);
-        return c;
+        if (contrato.getStatus().equals("VENCIDO") || contrato.getStatus().equals("RESCINDIDO")) {
+            throw new IllegalArgumentException("Este contrato esta vencido/rescindido.");
+        }
+
+        contrato.setVencimento(vencimento);
+        contradoDAO.update(contrato);
+
+        return contrato;
     }
 
     public Fornecedor buscarFornecedor(Integer id) {
         return fornecedorDAO.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Empresa nao encontrada."));
+                .orElseThrow(() -> new NoSuchElementException("Fornecedor nao encontrado."));
     }
 
     public Contrato buscarContrato(Fornecedor fornecedor) {
@@ -97,13 +101,28 @@ public class FornecedorService {
                 .orElseThrow(() -> new NoSuchElementException("Contrato nao encontrado."));
     }
 
+
+    public void atualizarStatusContrato(Contrato c) {
+        if (c.getStatus().equals("RESCINDIDO")) {
+            return;
+        }
+
+        if (LocalDate.now().equals(c.getVencimento())) {
+            c.setStatus("VENCIDO");
+            return;
+        }
+
+        c.setStatus("VIGENTE");
+        contradoDAO.update(c);
+    }
+
     public List<Fornecedor> buscaFiltradaFornecedor(String busca) {
         return fornecedorDAO
                 .findAll()
                 .stream()
-                .filter(f -> busca.contains(f.getNome())
-                        || busca.contains(f.getTitular())
-                        || busca.contains(f.getCnpj()))
+                .filter(f -> f.getNome().contains(busca)
+                        || f.getTitular().contains(busca)
+                        || f.getCnpj().contains(busca))
                 .toList();
     }
 

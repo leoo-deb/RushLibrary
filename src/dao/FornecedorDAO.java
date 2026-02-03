@@ -135,6 +135,35 @@ public class FornecedorDAO extends DAO<Fornecedor, Integer> {
         }
     }
 
+    public Optional<Fornecedor> findByCnpj(String cnpj) {
+        String sql = """
+                SELECT *
+                FROM Fornecedor
+                WHERE cnpj_empresa = ?""";
+
+        try (var ps = getConnection().prepareStatement(sql)) {
+
+            ps.setString(1, cnpj);
+            try (var rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    Fornecedor fornecedor = new Fornecedor();
+
+                    fornecedor.setId(rs.getInt(1));
+                    fornecedor.setNome(rs.getString(2));
+                    fornecedor.setTitular(rs.getString(3));
+                    fornecedor.setCnpj(rs.getString(4));
+                    fornecedor.setCODIGO_CONTRATO(rs.getInt(5));
+
+                    return Optional.of(fornecedor);
+                }
+            }
+            return Optional.empty();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public List<Fornecedor> findAll() {
         String sql = """

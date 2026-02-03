@@ -1,8 +1,11 @@
 package ui;
 
+import com.mysql.cj.protocol.a.NumberValueEncoder;
 import model.*;
 import services.*;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+
 import static io.Input.reader;
 import static io.Output.write;
 
@@ -23,15 +26,19 @@ public class LivroUI {
         while (true) {
             limparTela();
             menuGerenciamentoLivro();
-            int op = Integer.parseInt(reader(">"));
+            try {
+                int op = Integer.parseInt(reader(">"));
 
-            if (op == 1) cadastrarLivro(funcionario);
-            if (op == 2) removerLivro(funcionario);
-            if (op == 3) atualizarLivro();
-            if (op == 4) buscarLivro();
-            if (op == 5) listarLivros();
-            if (op == 6) estoqueUI.gerenciarEstoque(funcionario);
-            if (op == 0) break;
+                if (op == 1) cadastrarLivro(funcionario);
+                if (op == 2) removerLivro(funcionario);
+                if (op == 3) atualizarLivro();
+                if (op == 4) buscarLivro();
+                if (op == 5) listarLivros();
+                if (op == 6) estoqueUI.gerenciarEstoque(funcionario);
+                if (op == 0) break;
+            } catch (NumberFormatException e) {
+                write("ERROR: Digito incorreto.");
+            }
         }
 
     }
@@ -45,11 +52,17 @@ public class LivroUI {
         String nome = reader("Nome:");
         String sinopse = reader("Sinope:");
         String autor = reader("Autor:");
-        Integer isbn = Integer.parseInt(reader("ISBN:"));
+        Integer isbn;
+        try {
+            isbn = Integer.parseInt(reader("ISBN:"));
+        } catch (NumberFormatException e) {
+            write("ERROR: Digito incorreto.");
+            return;
+        }
         String genero = reader("Genero:");
         String tipo;
 
-        while (true) {
+        try {
             write("""
                     Selecione o cargo:
                     [1] Fisico
@@ -57,42 +70,58 @@ public class LivroUI {
                     [3] Ebook""");
             int escolha = Integer.parseInt(reader(">"));
 
-            if (escolha == 1) {
-                tipo = "FISICO";
-                break;
+            switch (escolha) {
+                case 1 -> tipo = "FISICO";
+                case 2 -> tipo = "DIGITAL";
+                case 3 -> tipo = "EBOOK";
+                default -> {
+                    write("ERROR: Dado incorreto.");
+                    return;
+                }
             }
-            if (escolha == 2) {
-                tipo = "DIGITAL";
-                break;
-            }
-            if (escolha == 3) {
-                tipo = "EBOOK";
-                break;
-            }
-            write("ERROR: Dado incorreto.");
+
+        } catch (NumberFormatException e) {
+            write("ERROR: Digito incorreto.");
+            return;
         }
 
-        Integer codeFornecedor = Integer.parseInt(reader("Codigo de Fornecedor:"));
-        Fornecedor fornecedor = fornecedorService.buscarEmpresa(codeFornecedor);
+        Integer codeFornecedor;
+        try {
+            codeFornecedor = Integer.parseInt(reader("Codigo de Fornecedor:"));
+        } catch (NumberFormatException e) {
+            write("ERROR: Digito incorreto.");
+            return;
+        }
 
-        Integer quantInicial = Integer.parseInt(reader("Quantidade inicial:"));
+        try {
+            Fornecedor fornecedor = fornecedorService.buscarFornecedor(codeFornecedor);
 
-        livroService.cadastrarLivro(funcionario, nome, sinopse, autor, isbn, genero, tipo, fornecedor, quantInicial);
-        limparTela();
+            Integer quantInicial;
+            try {
+                quantInicial = Integer.parseInt(reader("Quantidade inicial:"));
+            } catch (NumberFormatException e) {
+                write("ERROR: Digito incorreto.");
+                return;
+            }
 
-        write("═══════════════ LIVRO CADASTRADO ═══════════════");
-        write(String.format("""
-                Informacoes cadastrais:
-                Nome: %s
-                Sinopse: %s
-                Autor: %s
-                ISBN: %d
-                Genero: %s
-                Tipo: %s
-                
-                Cod. de Fornecedor: #%d
-                Quant. inicial: %d""", nome, sinopse, autor, isbn, tipo, tipo, codeFornecedor, quantInicial));
+            livroService.cadastrarLivro(funcionario, nome, sinopse, autor, isbn, genero, tipo, fornecedor, quantInicial);
+            limparTela();
 
+            write("═══════════════ LIVRO CADASTRADO ═══════════════");
+            write(String.format("""
+                    Informacoes cadastrais:
+                    Nome: %s
+                    Sinopse: %s
+                    Autor: %s
+                    ISBN: %d
+                    Genero: %s
+                    Tipo: %s
+                    
+                    Cod. de Fornecedor: #%d
+                    Quant. inicial: %d""", nome, sinopse, autor, isbn, genero, tipo, codeFornecedor, quantInicial));
+        } catch (Exception e) {
+            write("ERROR: " + e.getMessage());
+        }
         aguardandoEnter();
     }
 
@@ -133,124 +162,153 @@ public class LivroUI {
         while (true) {
             limparTela();
             menuAtualizacaoLivro();
-            int op = Integer.parseInt(reader(">"));
+            try {
+                int op = Integer.parseInt(reader(">"));
 
-            if (op == 1) {
-                Integer isbn = Integer.parseInt(reader("Digite a ISBN do livro:\n>"));
-                Livro l = livroService.buscarLivro(isbn);
+                if (op == 1) {
+                    int isbn;
+                    try {
+                        isbn = Integer.parseInt(reader("Digite a ISBN do livro:\n>"));
+                    } catch (NumberFormatException e) {
+                        write("ERROR: Digito invalido.");
+                        return;
+                    }
 
-                write(String.format("""
-                        Informacoes do livro:
-                        Nome: %s
-                        Sinopse: %s
-                        Autor: %s
-                        ISBN: %d
-                        Genero: %s
-                        Tipo: %s""", l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getGenero(), l.getTipo()));
-                aguardandoEnter();
+                    try {
+                        Livro l = livroService.buscarLivro(isbn);
+                        write(String.format("""
+                                    Informacoes do livro:
+                                    Nome: %s
+                                    Sinopse: %s
+                                    Autor: %s
+                                    ISBN: %d
+                                    Genero: %s
+                                    Tipo: %s""", l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(), l.getGenero(), l.getTipo()));
+                        aguardandoEnter();
 
-                String nome = reader("Digite o novo nome:\n>");
+                        String nome = reader("Digite o novo nome:\n>");
 
-                String confirmacao = reader("""
-                        Deseja realmente atualizar esse livro?
-                        >""").toUpperCase();
+                        String confirmacao = reader("""
+                                    Deseja realmente atualizar esse livro?
+                                    >""").toUpperCase();
 
-                if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    Livro livroAtualizado = livroService.atualizarLivro(l, nome, null, null);
+                        if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
+                            Livro livroAtualizado = livroService.atualizarLivro(l, nome, null, null);
 
-                    write(String.format("""
-                        Informacoes do livro atualizado:
-                        Nome: %s
-                        Sinopse: %s
-                        Autor: %s
-                        ISBN: %d
-                        Genero: %s
-                        Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
-                            livroAtualizado.getIsbn(), livroAtualizado.getGenero(), livroAtualizado.getTipo()));
-                } else {
-                    write("Operacao concelada.");
+                            write(String.format("""
+                                                Informacoes do livro atualizado:
+                                                Nome: %s
+                                                Sinopse: %s
+                                                Autor: %s
+                                                ISBN: %d
+                                                Genero: %s
+                                                Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
+                                    livroAtualizado.getIsbn(), livroAtualizado.getGenero(), livroAtualizado.getTipo()));
+                        } else {
+                            write("Operacao concelada.");
+                        }
+                    } catch (Exception e) {
+                        write("ERROR: " + e.getMessage());
+                    }
+                    aguardandoEnter();
                 }
-                aguardandoEnter();
-            }
 
-            if (op == 2) {
-                Integer isbn = Integer.parseInt(reader("Digite a ISBN do livro:\n>"));
-                Livro livro = livroService.buscarLivro(isbn);
+                if (op == 2) {
+                    int isbn;
+                    try {
+                        isbn = Integer.parseInt(reader("Digite a ISBN do livro:\n>"));
+                    } catch (NumberFormatException e) {
+                        write("ERROR: Digito invalido.");
+                        return;
+                    }
+                    try {
+                        Livro livro = livroService.buscarLivro(isbn);
+                        write(String.format("""
+                                        Informacoes do livro:
+                                        Nome: %s
+                                        Sinopse: %s
+                                        Autor: %s
+                                        ISBN: %d
+                                        Genero: %s
+                                        Tipo: %s""", livro.getNome(), livro.getSinopse(), livro.getAutor(), livro.getIsbn(),
+                                livro.getGenero(), livro.getTipo()));
+                        aguardandoEnter();
 
-                write(String.format("""
-                        Informacoes do livro:
-                        Nome: %s
-                        Sinopse: %s
-                        Autor: %s
-                        ISBN: %d
-                        Genero: %s
-                        Tipo: %s""", livro.getNome(), livro.getSinopse(), livro.getAutor(), livro.getIsbn(),
-                        livro.getGenero(), livro.getTipo()));
-                aguardandoEnter();
+                        String sinopse = reader("Digite a nova sinopse:\n>");
+                        String confirmacao = reader("""
+                                Deseja realmente atualizar esse livro?
+                                >""").toUpperCase();
 
-                String sinopse = reader("Digite a nova sinopse:\n>");
-
-                String confirmacao = reader("""
-                        Deseja realmente atualizar esse livro?
-                        >""").toUpperCase();
-
-                if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    Livro livroAtualizado = livroService.atualizarLivro(livro, null, sinopse, null);
-
-                    write(String.format("""
-                        Informacoes do livro atualizado:
-                        Nome: %s
-                        Sinopse: %s
-                        Autor: %s
-                        ISBN: %d
-                        Genero: %s
-                        Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
-                            livroAtualizado.getIsbn(), livroAtualizado.getGenero(), livroAtualizado.getTipo()));
-                } else {
-                    write("Operacao concelada.");
+                        if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
+                            Livro livroAtualizado = livroService.atualizarLivro(livro, null, sinopse, null);
+                            write(String.format("""
+                                            Informacoes do livro atualizado:
+                                            Nome: %s
+                                            Sinopse: %s
+                                            Autor: %s
+                                            ISBN: %d
+                                            Genero: %s
+                                            Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
+                                    livroAtualizado.getIsbn(), livroAtualizado.getGenero(), livroAtualizado.getTipo()));
+                        } else {
+                            write("Operacao concelada.");
+                        }
+                    } catch (Exception e) {
+                        write("ERROR: " + e.getMessage());
+                    }
+                    aguardandoEnter();
                 }
-                aguardandoEnter();
-            }
 
-            if (op == 3) {
-                Integer isbn = Integer.parseInt(reader("Digite a ISBN do livro:\n>"));
-                Livro livro = livroService.buscarLivro(isbn);
+                if (op == 3) {
+                    int isbn;
+                    try {
+                        isbn = Integer.parseInt(reader("Digite a ISBN do livro:\n>"));
+                    } catch (NumberFormatException e) {
+                        write("ERROR: Digito incorreto.");
+                        return;
+                    }
 
-                write(String.format("""
-                        Informacoes do livro:
-                        Nome: %s
-                        Sinopse: %s
-                        Autor: %s
-                        ISBN: %d
-                        Genero: %s
-                        Tipo: %s""", livro.getNome(), livro.getSinopse(), livro.getAutor(), livro.getIsbn(),
-                        livro.getGenero(), livro.getTipo()));
+                    try {
+                        Livro livro = livroService.buscarLivro(isbn);
+                        write(String.format("""
+                                        Informacoes do livro:
+                                        Nome: %s
+                                        Sinopse: %s
+                                        Autor: %s
+                                        ISBN: %d
+                                        Genero: %s
+                                        Tipo: %s""", livro.getNome(), livro.getSinopse(), livro.getAutor(), livro.getIsbn(),
+                                livro.getGenero(), livro.getTipo()));
 
-                String autor = reader("Digite o novo autor:\n>");
+                        String autor = reader("Digite o novo autor:\n>");
+                        String confirmacao = reader("""
+                                Deseja realmente atualizar esse livro?
+                                >""").toUpperCase();
 
-                String confirmacao = reader("""
-                        Deseja realmente atualizar esse livro?
-                        >""").toUpperCase();
-
-                if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                    Livro livroAtualizado = livroService.atualizarLivro(livro, null, null, autor);
-
-                    write(String.format("""
-                        Informacoes do livro atualizado:
-                        Nome: %s
-                        Sinopse: %s
-                        Autor: %s
-                        ISBN: %d
-                        Genero: %s
-                        Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
-                            livroAtualizado.getIsbn(), livroAtualizado.getGenero(), livroAtualizado.getTipo()));
-                } else {
-                    write("Operacao concelada.");
+                        if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
+                            Livro livroAtualizado = livroService.atualizarLivro(livro, null, null, autor);
+                            write(String.format("""
+                                            Informacoes do livro atualizado:
+                                            Nome: %s
+                                            Sinopse: %s
+                                            Autor: %s
+                                            ISBN: %d
+                                            Genero: %s
+                                            Tipo: %s""", livroAtualizado.getNome(), livroAtualizado.getSinopse(), livroAtualizado.getAutor(),
+                                    livroAtualizado.getIsbn(), livroAtualizado.getGenero(), livroAtualizado.getTipo()));
+                        } else {
+                            write("Operacao concelada.");
+                        }
+                    } catch (Exception e) {
+                        write("ERROR: " + e.getMessage());
+                    }
+                    aguardandoEnter();
                 }
-                aguardandoEnter();
-            }
 
-            if (op == 0) break;
+                if (op == 0) break;
+            } catch (NumberFormatException e) {
+                write("ERROR: Digito incorreto.");
+            }
         }
     }
 
@@ -258,30 +316,34 @@ public class LivroUI {
         limparTela();
         write("═══════════════ BUSCA DE LIVROS ═══════════════");
         String busca = reader("Busque pelo nome ou autor\n>");
-        List<Livro> resultado = livroService.buscaFiltradaLivro(busca);
+        try {
+            List<Livro> resultado = livroService.buscaFiltradaLivro(busca);
 
-        if (!resultado.isEmpty()) {
-            resultado
-                    .forEach(l -> {
-                        Estoque e = livroService.buscarEstoqueIdLivro(l.getId());
-                        write(String.format("""
-                            Informacoes do livro:
-                            Nome: %s
-                            Sinopse: %s
-                            Autor: %s
-                            ISBN: %d
-                            Genero: %s
-                            Tipo: %s
-                            
-                            Code. Fornecedor: #%d
-                            Estoque: #%d
-                            Quantidade: %d
-                            ═══════════════════════════════════════════════""",
-                                l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(),
-                                l.getGenero(), l.getTipo(), l.getId_fornecedor(), e.getId(), e.getQuantidade()));
-                    });
-        } else {
-            write("ERROR: Nenhum livro encontrado.");
+            if (!resultado.isEmpty()) {
+                resultado
+                        .forEach(l -> {
+                            Estoque e = livroService.buscarEstoqueIdLivro(l.getId());
+                            write(String.format("""
+                                            Informacoes do livro:
+                                            Nome: %s
+                                            Sinopse: %s
+                                            Autor: %s
+                                            ISBN: %d
+                                            Genero: %s
+                                            Tipo: %s
+                                            
+                                            Code. Fornecedor: #%d
+                                            Estoque: #%d
+                                            Quantidade: %d
+                                            ═══════════════════════════════════════════════""",
+                                    l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(),
+                                    l.getGenero(), l.getTipo(), l.getId_fornecedor(), e.getId(), e.getQuantidade()));
+                        });
+            } else {
+                write("ERROR: Nenhum livro encontrado.");
+            }
+        } catch (Exception e) {
+            write("ERROR: " + e.getMessage());
         }
         aguardandoEnter();
     }
@@ -289,30 +351,32 @@ public class LivroUI {
     private void listarLivros() {
         if (!livroService.listarLivros().isEmpty()) {
             write("═══════════════ LISTA DE LIVROS ═══════════════");
-            livroService
-                    .listarLivros()
-                    .forEach(l -> {
-                        Estoque e = livroService.buscarEstoqueIdLivro(l.getId());
-                        write(String.format("""
-                            Informacoes do livro:
-                            Nome: %s
-                            Sinopse: %s
-                            Autor: %s
-                            ISBN: %d
-                            Tipo: %s
-                            
-                            Categoria: %d
-                            Estoque: %d
-                            Quantidade: %d
-                            ═══════════════════════════════════════════════""",
-                                l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(),
-                                l.getTipo(), e.getId(), e.getQuantidade()));
-                    });
-            aguardandoEnter();
+            try {
+                livroService
+                        .listarLivros()
+                        .forEach(l -> {
+                            Estoque e = livroService.buscarEstoqueIdLivro(l.getId());
+                            write(String.format("""
+                                            Informacoes do livro:
+                                            Nome: %s
+                                            Sinopse: %s
+                                            Autor: %s
+                                            ISBN: %d
+                                            Tipo: %s
+                                            
+                                            Estoque: #%d
+                                            Quantidade: %d
+                                            ═══════════════════════════════════════════════""",
+                                    l.getNome(), l.getSinopse(), l.getAutor(), l.getIsbn(),
+                                    l.getTipo(), e.getId(), e.getQuantidade()));
+                        });
+            } catch (Exception e) {
+                write("ERROR: " + e.getMessage());
+            }
         } else {
             write("ERROR: Nenhum livro no sistema encontrado.");
-            aguardandoEnter();
         }
+        aguardandoEnter();
     }
 
     // — > Menus de gerenciamento

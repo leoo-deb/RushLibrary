@@ -131,7 +131,7 @@ public class LivroService {
             throw new IllegalArgumentException("Este cliente ja possui 5 emprestimos. O maximo de emprestimo por cliente e 5.");
         }
 
-        try (Connection conn = getConnection()) {
+        try (var conn = getConnection()) {
             conn.setAutoCommit(false);
             try {
                 // — > Criação do objeto para envio de uma nova movimentação ao banco de dados
@@ -162,25 +162,32 @@ public class LivroService {
         }
     }
 
-    public void registrarRetorno(Estoque estoque, Funcionario funcionario, Cliente cliente,
-                                 LocalDate entregaReal, Integer quant, String status) {
-        try (Connection conn = getConnection()) {
+    public void registrarRetorno(Movimentacao movimentacao, Estoque estoque, Funcionario funcionario,
+                                 Cliente cliente, LocalDate entregaReal, Integer quant) {
+        try (var conn = getConnection()) {
             conn.setAutoCommit(false);
             try {
-                Movimentacao r = new Movimentacao();
-                r.setId_estoque(estoque.getId());
-                r.setId_funcionario(funcionario.getId());
-                r.setQuant(quant);
-                r.setTipo("RETORNO_EMPRESTIMO");
-                r.setId_cliente(cliente.getId());
-                r.setDataEntrega(entregaReal);
-                r.setStatus(status);
-
                 estoque.entrada(quant);
                 cliente.retornoLivro(quant);
 
+                movimentacao.setId_funcionario(funcionario.getId());
+                movimentacao.setDataEntrega(entregaReal);
+                movimentacao.setStatus("DEVOLVIDO");
+
+                Movimentacao novaMovi = new Movimentacao();
+                novaMovi.setId_estoque(estoque.getId());
+                novaMovi.setId_funcionario(funcionario.getId());
+                novaMovi.setQuant(quant);
+                novaMovi.setTipo("RETORNO_EMPRESTIMO");
+                novaMovi.setId_cliente(cliente.getId());
+                novaMovi.setDataPrevista(movimentacao.getDataPrevista());
+                novaMovi.setDataEntrega(entregaReal);
+                novaMovi.setStatus("DEVOLVIDO");
+
                 estoqueDAO.update(estoque);
-                movimentacaoDAO.insert(r);
+                clienteDAO.update(cliente);
+                movimentacaoDAO.update(movimentacao);
+                movimentacaoDAO.insert(novaMovi);
             } catch (Exception e) {
                 conn.rollback();
                 throw new RuntimeException("Erro durante a transferência. Transação cancelada.", e);
@@ -205,20 +212,17 @@ public class LivroService {
             return;
         }
 
-        if (m.getDataPrevista().isAfter(LocalDate.now())) {
+        if (m.getStatus().equals("DEVOLVIDO")) {
+            return;
+        }
+
+        if (LocalDate.now().equals(m.getDataPrevista().plusDays(1))){
             m.setStatus("ATRASADO");
             return;
         }
 
         m.setStatus("ABERTO");
         movimentacaoDAO.update(m);
-    }
-
-    public boolean verificarEmprestimoAberto(Cliente cliente) {
-        return listarMovimentacao()
-                .stream()
-                .anyMatch(m -> m.getStatus().equals("ABERTO")
-                        && Objects.equals(m.getId_cliente(), cliente.getId()));
     }
 
     public boolean verificarEmprestimoAtrasado(Cliente cliente) {
