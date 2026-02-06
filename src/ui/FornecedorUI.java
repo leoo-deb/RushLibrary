@@ -21,14 +21,13 @@ public class FornecedorUI {
 
     public void gerenciarFornecedor(Funcionario funcionario) {
         fornecedorService.validacaoGerente(funcionario);
-
         while (true) {
             limparTela();
             menuGerenciamentoFornecedor();
             try {
                 int op = Integer.parseInt(reader(">"));
 
-                if (op == 1) cadastrarFornecedor();
+                if (op == 1) cadastrarFornecedor(funcionario);
                 if (op == 2) atualizarContrato();
                 if (op == 3) buscarFornecedor();
                 if (op == 4) listaFornecedores();
@@ -39,7 +38,7 @@ public class FornecedorUI {
         }
     }
 
-    private void cadastrarFornecedor() {
+    private void cadastrarFornecedor(Funcionario funcionario) {
         limparTela();
         write("═══════════════ CADASTRO DE FORNECEDOR ═══════════════");
         String nome = reader("Nome:");
@@ -61,7 +60,7 @@ public class FornecedorUI {
         }
 
         try {
-            Integer idFornecedor = fornecedorService.registrarFornecedor(nome, titular, cnpj, tipo,
+            Integer idFornecedor = fornecedorService.registrarFornecedor(funcionario, nome, titular, cnpj, tipo,
                     vigenciaFormatado, vencimentoFormatado);
 
             limparTela();

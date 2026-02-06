@@ -1,26 +1,27 @@
 package services;
 
+import dao.AuditoriaDAO;
 import dao.FuncionarioDAO;
 import exceptions.AcessoNegadoException;
 import exceptions.FormatoIncorretoException;
 import exceptions.FuncionarioExistenteException;
+import model.Auditoria;
 import model.Funcionario;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 import static io.Output.write;
+import static utils.ConnectFactory.getConnection;
 
 public class FuncionarioService {
-    private final FuncionarioDAO funcionarioDAO;
+    private final FuncionarioDAO funcionarioDAO = new FuncionarioDAO();
+    private final AuditoriaDAO auditoriaDAO = new AuditoriaDAO();
 
-    public FuncionarioService() {
-        this.funcionarioDAO = new FuncionarioDAO();
-    }
-
-    public Integer cadastrarFuncionario(String nome, String cpf, String email, String senha,
-                                            String cargo, LocalDate admissao) {
+    public Integer cadastrarFuncionario(Funcionario funcionario, String nome, String cpf, String email,
+                                        String senha, String cargo, LocalDate admissao) {
         // — > Validações de entrada
         if (!nome.matches("[A-Za-z]+\\s+[A-Za-z]{3,45}")) {
             throw new FormatoIncorretoException("Nome invalido.");
@@ -43,17 +44,33 @@ public class FuncionarioService {
             throw new FormatoIncorretoException("Senha invalida.");
         }
 
-        // — > Criação do objeto Funcionario para o envio ao banco
-        Funcionario f = new Funcionario();
-        f.setNome(nome);
-        f.setCpf(newCpf);
-        f.setEmail(email);
-        f.setSenha(senha);
-        f.setCargo(cargo);
-        f.setAdmissao(admissao);
+        try (var conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                // — > Criação do objeto Funcionario para o envio ao banco
+                Funcionario f = new Funcionario();
+                f.setNome(nome);
+                f.setCpf(newCpf);
+                f.setEmail(email);
+                f.setSenha(senha);
+                f.setCargo(cargo);
+                f.setAdmissao(admissao);
 
-        // — > Insert do objeto Funcionario no banco de dados
-        return funcionarioDAO.insert(f);
+                Auditoria a = new Auditoria();
+                a.setTipo("CADASTRO_FUNCIONARIO");
+                a.setID_FUNCIONARIO(funcionario.getId());
+                a.setID_TIPO(f.getId());
+
+                // — > Insert do objeto Funcionario no banco de dados
+                auditoriaDAO.insert(a);
+                return funcionarioDAO.insert(f);
+            } catch (Exception e) {
+                conn.rollback();
+                throw new RuntimeException("Erro na transferência. Transação cancelada.", e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Funcionario buscarFuncionario(String cpf) {
@@ -75,17 +92,50 @@ public class FuncionarioService {
             throw new IllegalArgumentException("Nao e possivel fazer a remocao de si mesmo.");
         }
 
-        buscarFuncionario(cpf);
-        funcionarioDAO.deleteByCPF(cpf);
+        try(var conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                Auditoria a = new Auditoria();
+                a.setTipo("REMOCAO_FUNCIONARIO");
+                a.setID_FUNCIONARIO(funcionario.getId());
+                a.setID_TIPO(Integer.parseInt(cpf));
+
+
+                buscarFuncionario(cpf);
+                auditoriaDAO.insert(a);
+                funcionarioDAO.deleteByCPF(cpf);
+            } catch (Exception e) {
+                conn.rollback();
+                throw new RuntimeException("Erro na transferência. Transação cancelada.", e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public void atualizarDados(Funcionario funcionario, String nome, String email, String senha) {
+    public void atualizarDados(Funcionario funcionario, String cpf, String nome, String email, String senha) {
+        try (var conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                Funcionario f = buscarFuncionario(cpf);
+                if (nome != null) f.setNome(nome);
+                if (email != null) f.setEmail(email);
+                if (senha != null) f.setSenha(senha);
 
-        if (nome != null) funcionario.setNome(nome);
-        if (email != null) funcionario.setEmail(email);
-        if (senha != null) funcionario.setSenha(senha);
+                Auditoria a = new Auditoria();
+                a.setTipo("ATUALIZACAO_CLIENTE");
+                a.setID_FUNCIONARIO(funcionario.getId());
+                a.setID_TIPO(Integer.parseInt(cpf));
 
-        funcionarioDAO.update(funcionario);
+                auditoriaDAO.insert(a);
+                funcionarioDAO.update(f);
+            } catch (Exception e) {
+                conn.rollback();
+                throw new RuntimeException("Erro na transferência. Transação cancelada.", e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void realizarPromocao(Funcionario funcionario, String cpf, String cargo) {
@@ -98,11 +148,28 @@ public class FuncionarioService {
             throw new IllegalArgumentException("Nao e possivel fazer a promocao de si mesmo.");
         }
 
-        Funcionario f = buscarFuncionario(newCpf);
-        if (f.getCargo().equals(cargo)) throw new IllegalArgumentException("Este funcionario ja esta com este cargo atribuido.");
-        f.setCargo(cargo);
+        try (var conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                Funcionario f = buscarFuncionario(newCpf);
+                if (f.getCargo().equals(cargo))
+                    throw new IllegalArgumentException("Este funcionario ja esta com este cargo atribuido.");
+                f.setCargo(cargo);
 
-        funcionarioDAO.update(f);
+                Auditoria a = new Auditoria();
+                a.setTipo("PROMOCAO_FUNCIONARIO");
+                a.setID_FUNCIONARIO(funcionario.getId());
+                a.setID_TIPO(Integer.parseInt(cpf));
+
+                auditoriaDAO.insert(a);
+                funcionarioDAO.update(f);
+            } catch (Exception e) {
+                conn.rollback();
+                throw new RuntimeException("Erro na transferência. Transação cancelada.", e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public List<Funcionario> buscaFiltradaFuncionario(String busca) {

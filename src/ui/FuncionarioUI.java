@@ -21,7 +21,7 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
             try {
                 int op = Integer.parseInt(reader(">"));
 
-                if (op == 1) cadastrarFucnionario();
+                if (op == 1) cadastrarFucnionario(funcionario);
                 if (op == 2) removerFuncionario(funcionario);
                 if (op == 3) atualizarFuncionario(funcionario);
                 if (op == 4) buscarFuncionario();
@@ -34,7 +34,7 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
     }
 
     // — > CRUD dos funcionarios
-    private void cadastrarFucnionario() {
+    private void cadastrarFucnionario(Funcionario funcionario) {
         limparTela();
         write("═══════════════ CADASTRO DE FUNCIONARIO ═══════════════");
         String nome = reader("Nome:");
@@ -73,7 +73,7 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
         }
 
         try {
-            Integer idFuncionario = funcionarioService.cadastrarFuncionario(nome, cpf, email, senha, cargo, dataFormatada);
+            Integer idFuncionario = funcionarioService.cadastrarFuncionario(funcionario, nome, cpf, email, senha, cargo, dataFormatada);
             limparTela();
 
             write("═══════════════ FUNCIONARIO CADASTRADO ═══════════════");
@@ -139,7 +139,6 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
                     String cpf = reader("CPF do funcionario:");
                     try {
                         Funcionario f = funcionarioService.buscarFuncionario(cpf);
-
                         write(String.format("""
                                 ID: %d
                                 Nome: %s
@@ -149,7 +148,7 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
                         String confirmacao = reader("Deseja realmente atualizar o nome?\n>").toUpperCase();
 
                         if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                            funcionarioService.atualizarDados(f, novoNome, null, null);
+                            funcionarioService.atualizarDados(funcionario, cpf, novoNome, null, null);
                             write("SUCCESS: Operacao cocnluida.");
                         } else {
                             write("INFO: Operacao cancelada.");
@@ -175,7 +174,7 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
                         String confirmacao = reader("Deseja realmente atualizar o email?\n>").toUpperCase();
 
                         if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                            funcionarioService.atualizarDados(f, null, novoEmail, null);
+                            funcionarioService.atualizarDados(funcionario, cpf, null, novoEmail, null);
                             write("SUCCESS: Operacao cocnluida.");
                         } else {
                             write("INFO: Operacao cancelada.");
@@ -200,7 +199,7 @@ public record FuncionarioUI(FuncionarioService funcionarioService) {
                         String confirmacao = reader("Deseja realmente atualizar o senha?\n>").toUpperCase();
 
                         if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                            funcionarioService.atualizarDados(funcionario, null, null, novaSenha);
+                            funcionarioService.atualizarDados(funcionario, cpf, null, null, novaSenha);
                             write("SUCCESS: Operacao cocnluida.");
                         } else {
                             write("INFO: Operacao cancelada.");

@@ -1,9 +1,6 @@
 package dao;
 
-import com.mysql.cj.xdevapi.ExprUnparser;
 import model.Auditoria;
-
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;

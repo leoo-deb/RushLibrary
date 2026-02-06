@@ -28,6 +28,7 @@ public class ConsoleUI {
 
     public void executar() {
          while (true) {
+             limparTela();
              funcionario = null;
              write("""
                      ╔════════════════════════════════════════╗

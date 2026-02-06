@@ -16,9 +16,9 @@ public record ClienteUI(ClienteService clienteService) {
             try {
                 int op = Integer.parseInt(reader(">"));
 
-                if (op == 1) cadastrarCliente();
+                if (op == 1) cadastrarCliente(funcionario);
                 if (op == 2) removerCliente(funcionario);
-                if (op == 3) atualizarCliente();
+                if (op == 3) atualizarCliente(funcionario);
                 if (op == 4) buscarCliente();
                 if (op == 5) listarCliente();
                 if (op == 0) break;
@@ -29,7 +29,7 @@ public record ClienteUI(ClienteService clienteService) {
     }
 
     // -> CRUD de clientes
-    private void cadastrarCliente() {
+    private void cadastrarCliente(Funcionario funcionario) {
         limparTela();
         write("═══════════════ CADASTRO DE CLIENTE ═══════════════");
         String nome = reader("Nome e Sobrenome:");
@@ -38,7 +38,7 @@ public record ClienteUI(ClienteService clienteService) {
         String numero = reader("Numero:");
 
         try {
-            Integer idCliente = clienteService.cadastrarCliente(nome, cpf, email, numero);
+            Integer idCliente = clienteService.cadastrarCliente(funcionario, nome, cpf, email, numero);
             limparTela();
 
             write("═══════════════ CADASTRO CONCLUIDO ═══════════════");
@@ -80,7 +80,7 @@ public record ClienteUI(ClienteService clienteService) {
                     >""").toUpperCase();
 
             if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                clienteService.removerCliente(cpf);
+                clienteService.removerCliente(funcionario, c);
                 write("SUCCESS: Operacao concluida.");
             } else {
                 write("ERROR; Operacao cancelada.");
@@ -91,7 +91,7 @@ public record ClienteUI(ClienteService clienteService) {
         aguardandoEnter();
     }
 
-    private void atualizarCliente() {
+    private void atualizarCliente(Funcionario funcionario) {
         while (true) {
             limparTela();
             menuAtualizacaoCliente();
@@ -118,7 +118,7 @@ public record ClienteUI(ClienteService clienteService) {
                                 >""").toUpperCase();
 
                         if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                            clienteService.atualizarDados(cpf, novoNome, null, null);
+                            clienteService.atualizarDados(funcionario, c, novoNome, null, null);
                             write("SUCCESS: Operacao concluida.");
                         } else {
                             write("ERROR; Operacao cancelada.");
@@ -148,7 +148,7 @@ public record ClienteUI(ClienteService clienteService) {
                                 >""").toUpperCase();
 
                         if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                            clienteService.atualizarDados(cpf, null, novoEmail, null);
+                            clienteService.atualizarDados(funcionario, c, null, novoEmail, null);
                             write("SUCCESS: Operacao concluida.");
                         } else {
                             write("ERROR; Operacao cancelada.");
@@ -178,7 +178,7 @@ public record ClienteUI(ClienteService clienteService) {
                                 >""").toUpperCase();
 
                         if (confirmacao.equals("S") || confirmacao.equals("SIM")) {
-                            clienteService.atualizarDados(cpf, null, null, novoNumero);
+                            clienteService.atualizarDados(funcionario, c, null, null, novoNumero);
                             write("SUCCESS: Operacao concluida.");
                         } else {
                             write("ERROR; Operacao cancelada.");

@@ -1,22 +1,24 @@
 package services;
 
+import dao.AuditoriaDAO;
 import dao.ClienteDAO;
 import exceptions.AcessoNegadoException;
 import exceptions.FormatoIncorretoException;
 import exceptions.FuncionarioExistenteException;
+import model.Auditoria;
 import model.Cliente;
 import model.Funcionario;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import static utils.ConnectFactory.getConnection;
+
 public class ClienteService {
-    private final ClienteDAO clienteDAO;
+    private final ClienteDAO clienteDAO = new ClienteDAO();
+    private final AuditoriaDAO auditoriaDAO = new AuditoriaDAO();
 
-    public ClienteService() {
-        this.clienteDAO = new ClienteDAO();
-    }
-
-    public Integer cadastrarCliente(String nome, String cpf, String email, String numero) {
+    public Integer cadastrarCliente(Funcionario funcionario, String nome, String cpf, String email, String numero) {
         if (clienteDAO.findByCPF(cpf).isPresent()) {
             throw new FuncionarioExistenteException("Este CPF ja esta associado a um cliente.");
         }
@@ -39,13 +41,29 @@ public class ClienteService {
         }
         String newNumero = numero.replaceAll("\\D", "");
 
-        Cliente c = new Cliente();
-        c.setNome(nome);
-        c.setCpf(newCpf);
-        c.setEmail(email);
-        c.setNumero(newNumero);
+        try (var conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                Cliente c = new Cliente();
+                c.setNome(nome);
+                c.setCpf(newCpf);
+                c.setEmail(email);
+                c.setNumero(newNumero);
 
-        return clienteDAO.insert(c);
+                Auditoria a = new Auditoria();
+                a.setTipo("CADASTRO_CLIENTE");
+                a.setID_FUNCIONARIO(funcionario.getId());
+                a.setID_TIPO(c.getId());
+
+                auditoriaDAO.insert(a);
+                return clienteDAO.insert(c);
+            } catch (Exception e) {
+                conn.rollback();
+                throw new RuntimeException("Erro na transferência. Transação cancelada.", e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Cliente buscarCliente(String cpf) {
@@ -63,38 +81,64 @@ public class ClienteService {
                 .orElseThrow(() -> new NoSuchElementException("Cliente nao encontrado."));
     }
 
-    public void atualizarDados(String buscarCpf, String nome, String email, String numero) {
-        Cliente c = buscarCliente(buscarCpf);
+    public void atualizarDados(Funcionario funcionario, Cliente cliente, String nome, String email, String numero) {
+        try (var conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                if (nome != null) {
+                    if (!nome.matches("[A-Za-z]{3,20}+\\s+[A-Za-z]{3,20}")) {
+                        throw new FormatoIncorretoException("Nome invalido.");
+                    }
+                    cliente.setNome(nome);
+                }
+                if (email != null) {
+                    if (!email.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}")) {
+                        throw new FormatoIncorretoException("Email invalido.");
+                    }
+                    cliente.setEmail(email);
+                }
+                if (numero != null) {
+                    if (!numero.matches("[\\d.]{11,25}")) {
+                        throw new FormatoIncorretoException("Numero invalido.");
+                    }
+                    String newNumero = numero.replaceAll("\\D", "");
+                    cliente.setNumero(newNumero);
+                }
 
-        if (nome != null) {
-            if (!nome.matches("[A-Za-z]{3,20}+\\s+[A-Za-z]{3,20}")) {
-                throw new FormatoIncorretoException("Nome invalido.");
-            }
+                Auditoria a = new Auditoria();
+                a.setTipo("ATUALIZACAO_CLIENTE");
+                a.setID_FUNCIONARIO(funcionario.getId());
+                a.setID_TIPO(cliente.getId());
 
-            c.setNome(nome);
-        }
-        if (email != null) {
-            if (!email.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}")) {
-                throw new FormatoIncorretoException("Email invalido.");
+                auditoriaDAO.insert(a);
+                clienteDAO.update(cliente);
+            } catch (Exception e) {
+                conn.rollback();
+                throw new RuntimeException("Erro na transferência. Transação cancelada.", e);
             }
-            c.setEmail(email);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-        if (numero != null) {
-            if (!numero.matches("[\\d.]{11,25}")) {
-                throw new FormatoIncorretoException("Numero invalido.");
-            }
-            String newNumero = numero.replaceAll("\\D", "");
-            c.setNumero(newNumero);
-        }
-
-        clienteDAO.update(c);
     }
 
-    public void removerCliente(String cpf) {
-        if (!cpf.matches("\\d{11,25}")) throw new FormatoIncorretoException("CPF invalido.");
+    public void removerCliente(Funcionario funcionario, Cliente cliente) {
+        try (var conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                Auditoria a = new Auditoria();
+                a.setTipo("REMOCAO_CLIENTE");
+                a.setID_FUNCIONARIO(funcionario.getId());
+                a.setID_TIPO(cliente.getId());
 
-        buscarCliente(cpf);
-        clienteDAO.deleteByCpf(cpf);
+                auditoriaDAO.insert(a);
+                clienteDAO.deleteByCpf(cliente.getCpf());
+            } catch (Exception e) {
+                conn.rollback();
+                throw new RuntimeException("Erro na transferência. Transação cancelada.", e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public List<Cliente> buscaFiltradaCliente(String busca) {

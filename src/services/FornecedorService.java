@@ -1,10 +1,12 @@
 package services;
 
+import dao.AuditoriaDAO;
 import dao.ContradoDAO;
 import dao.FornecedorDAO;
 import exceptions.AcessoNegadoException;
 import exceptions.EmpresaExistenteException;
 import exceptions.FormatoIncorretoException;
+import model.Auditoria;
 import model.Contrato;
 import model.Fornecedor;
 import model.Funcionario;
@@ -18,9 +20,10 @@ import static utils.ConnectFactory.getConnection;
 public class FornecedorService {
     private final FornecedorDAO fornecedorDAO = new FornecedorDAO();
     private final ContradoDAO contradoDAO = new ContradoDAO();
+    private final AuditoriaDAO auditoriaDAO = new AuditoriaDAO();
 
-    public Integer registrarFornecedor(String nome, String titular, String cnpj, String tipoContrato,
-                                       LocalDate vigencia, LocalDate vencimento) {
+    public Integer registrarFornecedor(Funcionario funcionario, String nome, String titular, String cnpj,
+                                       String tipoContrato, LocalDate vigencia, LocalDate vencimento) {
         // — > Validações de entrada
         if (!nome.matches(".{3,30}")) {
             throw new FormatoIncorretoException("Nome invalido.");
@@ -57,13 +60,19 @@ public class FornecedorService {
                 c.setStatus("VIGENTE");
                 Integer idContrato = contradoDAO.insert(c);
 
-                Fornecedor e = new Fornecedor();
-                e.setNome(nome);
-                e.setTitular(titular);
-                e.setCnpj(cnpj);
-                e.setCODIGO_CONTRATO(idContrato);
+                Fornecedor f = new Fornecedor();
+                f.setNome(nome);
+                f.setTitular(titular);
+                f.setCnpj(cnpj);
+                f.setCODIGO_CONTRATO(idContrato);
 
-                return fornecedorDAO.insert(e);
+                Auditoria a = new Auditoria();
+                a.setTipo("REGISTRO_FORNECEDOR");
+                a.setID_FUNCIONARIO(funcionario.getId());
+                a.setID_TIPO(f.getCODIGO_CONTRATO());
+
+                auditoriaDAO.insert(a);
+                return fornecedorDAO.insert(f);
             } catch (Exception e) {
                 conn.rollback();
                 throw new RuntimeException("Erro na transferência. Transação cancelada.", e);
@@ -74,21 +83,37 @@ public class FornecedorService {
         }
     }
 
-    public Contrato atualizarVencimento(Fornecedor fornecedor, LocalDate vencimento) {
+    public Contrato atualizarVencimento(Funcionario funcionario, Fornecedor fornecedor, LocalDate vencimento) {
         if (vencimento.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("Nao e possivel por vencimentos passados.");
         }
 
-        Contrato contrato = buscarContrato(fornecedor);
+        try (var conn = getConnection()) {
+            conn.setAutoCommit(false);
 
-        if (contrato.getStatus().equals("VENCIDO") || contrato.getStatus().equals("RESCINDIDO")) {
-            throw new IllegalArgumentException("Este contrato esta vencido/rescindido.");
+            try {
+                Contrato contrato = buscarContrato(fornecedor);
+                if (contrato.getStatus().equals("VENCIDO") || contrato.getStatus().equals("RESCINDIDO")) {
+                    throw new IllegalArgumentException("Este contrato esta vencido/rescindido.");
+                }
+
+                Auditoria a = new Auditoria();
+                a.setTipo("ATUALIZACAO_CONTRATO");
+                a.setID_FUNCIONARIO(funcionario.getId());
+                a.setID_TIPO(fornecedor.getCODIGO_CONTRATO());
+
+                contrato.setVencimento(vencimento);
+                auditoriaDAO.insert(a);
+                contradoDAO.update(contrato);
+                return contrato;
+            } catch (Exception e) {
+                conn.rollback();
+                throw new RuntimeException("Erro na transferência. Transação cancelada.", e);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-
-        contrato.setVencimento(vencimento);
-        contradoDAO.update(contrato);
-
-        return contrato;
     }
 
     public Fornecedor buscarFornecedor(Integer id) {
@@ -100,7 +125,6 @@ public class FornecedorService {
         return contradoDAO.findById(fornecedor.getCODIGO_CONTRATO())
                 .orElseThrow(() -> new NoSuchElementException("Contrato nao encontrado."));
     }
-
 
     public void atualizarStatusContrato(Contrato c) {
         if (c.getStatus().equals("RESCINDIDO")) {
