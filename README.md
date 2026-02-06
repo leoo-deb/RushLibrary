@@ -188,7 +188,7 @@ java -cp "bin;mysql-connector-j-8.3.0.jar" Main
 ## Atualizações do Projeto
 
 - [x] Construção de toda a estrutura do projeto
-- [ ] Implementar sistema de um novo sistema de remoção mais eficiente e mais seguro
+- [x] Implementar sistema de um novo sistema de remoção mais eficiente e mais seguro
 - [ ] Realizar testes dos erros e gradualmente tratá-los
 - [ ] Testar o projeto com objetivo da procura de erros pendentes
 - [ ] Finalização do projeto
